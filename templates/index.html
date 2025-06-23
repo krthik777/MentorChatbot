@@ -361,7 +361,26 @@
 
       try {
         const { data } = await axios.post('/chat', { message: msg });
-        addMessage(data.text_response, false, data.sentiment);
+        const r = data.structured_response;
+        console.log('Response:', r);
+        console.log(typeof r)
+        const suggestionsHTML = r["Practical Suggestions"]
+          .map(s => `• ${s}<br>`)
+          .join("");
+        const fullMessage = `
+          ${r["Empathetic Acknowledgement"]}<br><br>
+
+          🔧 Suggestions:<br>
+          ${suggestionsHTML}<br>
+
+          💡 Reflection: ${r["CBT-style Reflection Tip"]}<br>
+          💬 ${r["Encouraging Closing Line"]}<br>
+        `.trim();
+        addMessage(fullMessage, false, data.sentiment);
+        if (data.audio_response) {
+          const audio = new Audio("data:audio/mp3;base64," + data.audio_response);
+          audio.play();
+        }
       } catch (err) {
         console.error('Chat error:', err);
         addMessage('Sorry, I had trouble responding. Please try again.', false);
