@@ -79,8 +79,7 @@ gemini_generation_config = {
 }
 
 model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash",
-    generation_config=gemini_generation_config
+    model_name="gemini-2.0-flash", generation_config=gemini_generation_config
 )
 
 SAFETY_SETTINGS = {
@@ -106,11 +105,11 @@ CHAT_SCHEMA = {
 FEEDBACK_SCHEMA = {
     "type": "object",
     "properties": {
-        "rating": {"type": "number", "minimum": 1, "maximum": 5},
-        "user_input": {"type": "string", "maxLength": 200},
-        "bot_response": {"type": "string", "maxLength": 500},
+        "rating": {"type": "integer", "minimum": 1, "maximum": 5},
+        "user_input": {"type": "string"},
+        "bot_response": {"type": "string"},
     },
-    "required": ["rating"],
+    "required": ["rating", "user_input", "bot_response"],
 }
 
 
@@ -456,10 +455,19 @@ def handle_feedback():
             "timestamp": datetime.datetime.now(datetime.timezone.utc),
         }
 
-        db.feedback.insert_one(feedback_data)
+        db.feedback.update_one(
+            {
+                "bot_response": feedback_data["bot_response"],
+                "user_input": feedback_data["user_input"],
+            },
+            {"$set": feedback_data},
+            upsert=True,
+        )
         return jsonify({"status": "success"})
 
-    except ValidationError:
+    except ValidationError as e:
+        print("Validation failed:", e.message)
+        print("Invalid data:", data)
         return jsonify({"error": "Invalid feedback format"}), 400
     except PyMongoError as e:
         logger.error(f"Feedback error: {str(e)}")

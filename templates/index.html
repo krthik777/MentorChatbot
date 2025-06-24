@@ -1,235 +1,231 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>MentorAI - Digital Mentorship Platform</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <style>
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
-            }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MentorAI - Digital Mentorship Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+      }
 
-            70% {
-                box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
-            }
+      70% {
+        box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
+      }
 
-            100% {
-                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
-            }
-        }
+      100% {
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+      }
+    }
 
-        .pulse-active {
-            animation: pulse 1.5s infinite;
-        }
+    .pulse-active {
+      animation: pulse 1.5s infinite;
+    }
 
-        .message-enter {
-            animation: slideIn 0.3s ease-out;
-        }
+    .message-enter {
+      animation: slideIn 0.3s ease-out;
+    }
 
-        @keyframes slideIn {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
+    @keyframes slideIn {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
 
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
 
-        .dashboard-section {
-            display: none;
-        }
+    .dashboard-section {
+      display: none;
+    }
 
-        .dashboard-section.active {
-            display: block;
-        }
+    .dashboard-section.active {
+      display: block;
+    }
 
-        .sidebar-backdrop {
-            display: none;
-        }
+    .sidebar-backdrop {
+      display: none;
+    }
 
-        @media (max-width: 1023px) {
-            #sidebar {
-                position: fixed;
-                top: 0;
-                left: -100%;
-                z-index: 50;
-                height: 100vh;
-                transition: left 0.3s;
-            }
+    @media (max-width: 1023px) {
+      #sidebar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        z-index: 50;
+        height: 100vh;
+        transition: left 0.3s;
+      }
 
-            #sidebar.active {
-                left: 0;
-            }
+      #sidebar.active {
+        left: 0;
+      }
 
-            .sidebar-backdrop.active {
-                display: block;
-            }
-        }
-    </style>
+      .sidebar-backdrop.active {
+        display: block;
+      }
+    }
+  </style>
 </head>
 
 <body class="bg-gray-50 font-sans h-screen flex flex-col overflow-hidden">
-    <!-- Header -->
-    <header class="bg-indigo-600 text-white py-4 px-4 sm:px-6 flex items-center justify-between shadow-lg">
-        <div class="flex items-center space-x-3">
-            <button id="sidebarToggle" class="lg:hidden">
-                <span class="material-icons text-2xl">menu</span>
-            </button>
-            <h1 class="text-xl font-bold">MentorAI</h1>
-        </div>
-        <div class="flex items-center space-x-2 sm:space-x-4">
-            <div class="flex items-center space-x-2 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg">
-                <span class="material-icons">psychology</span>
-                <span class="text-sm hidden sm:inline">Emotion-Aware Mentorship</span>
-            </div>
-        </div>
-    </header>
-
-    <div class="flex flex-1 overflow-hidden relative">
-        <!-- Sidebar Backdrop -->
-        <div class="sidebar-backdrop fixed inset-0 z-40 bg-black/50 lg:hidden" id="sidebarBackdrop"></div>
-
-        <!-- Sidebar -->
-        <aside id="sidebar" class="bg-white w-64 shadow-xl fixed lg:static lg:transform-none z-50">
-            <nav class="p-3 sm:p-4 space-y-1 sm:space-y-2">
-                <a href="#chat" class="flex items-center p-2 sm:p-3 rounded-lg bg-indigo-50 text-indigo-700">
-                    <span class="material-icons mr-2 sm:mr-3">forum</span>
-                    Chat Interface
-                </a>
-                <a href="#analytics" class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-100">
-                    <span class="material-icons mr-2 sm:mr-3">analytics</span>
-                    Analytics Dashboard
-                </a>
-                <a href="#history" class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-100">
-                    <span class="material-icons mr-2 sm:mr-3">history</span>
-                    Session History
-                </a>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="flex-1 overflow-auto p-4 sm:p-6">
-            <!-- Chat Section -->
-            <div id="chatSection" class="dashboard-section active">
-                <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-sm">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold">AI Mentorship Chat</h2>
-                    </div>
-
-                    <div id="chatContainer" class="h-80 sm:h-96 overflow-y-auto p-4 space-y-4">
-                        <div class="flex justify-start">
-                            <div class="bg-gray-100 p-3 sm:p-4 rounded-xl max-w-[85%] sm:max-w-[80%]">
-                                <p class="text-sm sm:text-base">Hello! I'm your AI mentor here to provide guidance and
-                                    support. Feel free to share your thoughts or questions.</p>
-                                <div class="mt-2 text-xs text-gray-500 flex items-center">
-                                    <span class="material-icons text-sm mr-1">engineering</span>
-                                    24/7 Support • Emotion Detection • CBT Techniques
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
-                        <div class="flex items-center gap-2 sm:gap-3">
-                            <input id="messageInput" type="text" placeholder="Type your message..."
-                                class="flex-1 px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base rounded-lg border focus:ring-2 focus:ring-indigo-500">
-                            <button id="voiceButton" class="p-2 rounded-lg bg-white border hover:bg-gray-100">
-                                <span class="material-icons text-indigo-600 text-xl">mic</span>
-                            </button>
-                            <button id="sendButton"
-                                class="px-3 py-2 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                                <span class="material-icons text-xl">send</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Analytics Dashboard -->
-            <div id="analyticsSection" class="dashboard-section">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-                        <h3 class="text-lg font-semibold mb-4">Engagement Trends</h3>
-                        <div class="h-64 sm:h-72">
-                            <canvas id="engagementChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-                        <h3 class="text-lg font-semibold mb-4">Emotional Distribution</h3>
-                        <div class="h-64 sm:h-72">
-                            <canvas id="sentimentChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="md:col-span-2 bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-                        <h3 class="text-lg font-semibold mb-4">Performance Metrics</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                            <div class="bg-indigo-50 p-4 sm:p-6 rounded-lg">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <p class="text-sm text-gray-600">Average Rating</p>
-                                        <p class="text-2xl sm:text-3xl font-bold text-indigo-600" id="avgRating">4.8</p>
-                                    </div>
-                                    <span class="material-icons text-indigo-600 text-3xl sm:text-4xl">star_rate</span>
-                                </div>
-                            </div>
-                            <div class="bg-white border p-4 sm:p-6 rounded-lg">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <p class="text-sm text-gray-600">Total Sessions</p>
-                                        <p class="text-2xl sm:text-3xl font-bold text-gray-800" id="totalSessions">1,234
-                                        </p>
-                                    </div>
-                                    <span class="material-icons text-gray-600 text-3xl sm:text-4xl">forum</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Session History -->
-            <div id="historySection" class="dashboard-section">
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold">Recent Mentorship Sessions</h2>
-                    </div>
-                    <div class="overflow-x-auto max-h-[500px] sm:max-h-[600px]">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th
-                                        class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                                        Time</th>
-                                    <th
-                                        class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                                        User Input</th>
-                                    <th
-                                        class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                                        AI Response</th>
-                                    <th
-                                        class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                                        Emotions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="historyContainer" class="divide-y divide-gray-200 text-xs sm:text-sm"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </main>
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white py-4 px-4 sm:px-6 flex items-center justify-between shadow-lg">
+    <div class="flex items-center space-x-3">
+      <button id="sidebarToggle" class="lg:hidden">
+        <span class="material-icons text-2xl">menu</span>
+      </button>
+      <h1 class="text-xl font-bold">MentorAI</h1>
     </div>
+    <div class="flex items-center space-x-2 sm:space-x-4">
+      <div class="flex items-center space-x-2 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg">
+        <span class="material-icons">psychology</span>
+        <span class="text-sm hidden sm:inline">Emotion-Aware Mentorship</span>
+      </div>
+    </div>
+  </header>
 
-    <script>
+  <div class="flex flex-1 overflow-hidden relative">
+    <!-- Sidebar Backdrop -->
+    <div class="sidebar-backdrop fixed inset-0 z-40 bg-black/50 lg:hidden" id="sidebarBackdrop"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="bg-white w-64 shadow-xl fixed lg:static lg:transform-none z-50">
+      <nav class="p-3 sm:p-4 space-y-1 sm:space-y-2">
+        <a href="#chat" class="flex items-center p-2 sm:p-3 rounded-lg bg-indigo-50 text-indigo-700">
+          <span class="material-icons mr-2 sm:mr-3">forum</span>
+          Chat Interface
+        </a>
+        <a href="#analytics" class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-100">
+          <span class="material-icons mr-2 sm:mr-3">analytics</span>
+          Analytics Dashboard
+        </a>
+        <a href="#history" class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-100">
+          <span class="material-icons mr-2 sm:mr-3">history</span>
+          Session History
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-auto p-4 sm:p-6">
+      <!-- Chat Section -->
+      <div id="chatSection" class="dashboard-section active">
+        <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-sm">
+          <div class="p-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold">AI Mentorship Chat</h2>
+          </div>
+
+          <div id="chatContainer" class="h-80 sm:h-96 overflow-y-auto p-4 space-y-4">
+            <div class="flex justify-start">
+              <div class="bg-gray-100 p-3 sm:p-4 rounded-xl max-w-[85%] sm:max-w-[80%]">
+                <p class="text-sm sm:text-base">Hello! I'm your AI mentor here to provide guidance and
+                  support. Feel free to share your thoughts or questions.</p>
+                <div class="mt-2 text-xs text-gray-500 flex items-center">
+                  <span class="material-icons text-sm mr-1">engineering</span>
+                  24/7 Support • Emotion Detection • CBT Techniques
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <input id="messageInput" type="text" placeholder="Type your message..."
+                class="flex-1 px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base rounded-lg border focus:ring-2 focus:ring-indigo-500">
+              <button id="voiceButton" class="p-2 rounded-lg bg-white border hover:bg-gray-100">
+                <span class="material-icons text-indigo-600 text-xl">mic</span>
+              </button>
+              <button id="sendButton"
+                class="px-3 py-2 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                <span class="material-icons text-xl">send</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Dashboard -->
+      <div id="analyticsSection" class="dashboard-section">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
+            <h3 class="text-lg font-semibold mb-4">Engagement Trends</h3>
+            <div class="h-64 sm:h-72">
+              <canvas id="engagementChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
+            <h3 class="text-lg font-semibold mb-4">Emotional Distribution</h3>
+            <div class="h-64 sm:h-72">
+              <canvas id="sentimentChart"></canvas>
+            </div>
+          </div>
+
+          <div class="md:col-span-2 bg-white p-4 sm:p-6 rounded-xl shadow-sm">
+            <h3 class="text-lg font-semibold mb-4">Performance Metrics</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div class="bg-indigo-50 p-4 sm:p-6 rounded-lg">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="text-sm text-gray-600">Average Rating</p>
+                    <p class="text-2xl sm:text-3xl font-bold text-indigo-600" id="avgRating">4.8</p>
+                  </div>
+                  <span class="material-icons text-indigo-600 text-3xl sm:text-4xl">star_rate</span>
+                </div>
+              </div>
+              <div class="bg-white border p-4 sm:p-6 rounded-lg">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="text-sm text-gray-600">Total Sessions</p>
+                    <p class="text-2xl sm:text-3xl font-bold text-gray-800" id="totalSessions">1,234
+                    </p>
+                  </div>
+                  <span class="material-icons text-gray-600 text-3xl sm:text-4xl">forum</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Session History -->
+      <div id="historySection" class="dashboard-section">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold">Recent Mentorship Sessions</h2>
+          </div>
+          <div class="overflow-x-auto max-h-[500px] sm:max-h-[600px]">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                    Time</th>
+                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                    User Input</th>
+                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                    AI Response</th>
+                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                    Emotions</th>
+                </tr>
+              </thead>
+              <tbody id="historyContainer" class="divide-y divide-gray-200 text-xs sm:text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
     let engagementChart, sentimentChart;
     const chatContainer = document.getElementById('chatContainer');
     const messageInput = document.getElementById('messageInput');
@@ -269,7 +265,7 @@
             labels: data.sentiment_distribution.map(d => d._id),
             datasets: [{
               data: data.sentiment_distribution.map(d => d.count),
-              backgroundColor: ['#6366f1','#60a5fa','#34d399','#fbbf24']
+              backgroundColor: ['#6366f1', '#60a5fa', '#34d399', '#fbbf24']
             }]
           },
           options: { responsive: true, maintainAspectRatio: false }
@@ -317,7 +313,7 @@
           <div class="mt-2 sm:mt-3 flex items-center justify-between flex-wrap gap-2">
             <div class="flex space-x-1">${emotionsBadges}</div>
             <div class="flex space-x-1 text-sm">
-              ${[1,2,3,4,5].map(i => `
+              ${[1, 2, 3, 4, 5].map(i => `
                 <button class="rating-btn p-1 hover:text-yellow-400" data-rating="${i}">
                   <span class="material-icons text-sm">star</span>
                 </button>
@@ -328,23 +324,54 @@
       `;
 
       if (!isUser) {
-        messageDiv.querySelectorAll('.rating-btn').forEach(btn => {
+        const ratingButtons = messageDiv.querySelectorAll('.rating-btn');
+        let selectedRating = 0;
+
+        const updateStars = (rating) => {
+          ratingButtons.forEach(b => {
+            const r = parseInt(b.dataset.rating, 10);
+            b.classList.toggle('text-yellow-400', r <= rating);
+          });
+        };
+
+        ratingButtons.forEach(btn => {
           btn.addEventListener('click', async () => {
-            const rating = btn.dataset.rating;
+            const rating = parseInt(btn.dataset.rating, 10);
+            const plainBotResponse = text.replace(/<br\s*\/?>/gi, '\n')
+              .replace(/<[^>]+>/g, '')
+              .trim();
+
             try {
               await axios.post('/feedback', {
-                rating: parseInt(rating),
+                rating: rating,
                 user_input: lastUserMessage,
-                bot_response: text
+                bot_response: plainBotResponse
+              }, {
+                headers: {
+                  'Content-Type': 'application/json'
+                }
               });
-              btn.classList.add('text-yellow-400');
-              messageDiv.querySelectorAll('.rating-btn').forEach(b => b.disabled = true);
+
+              selectedRating = rating;
+              updateStars(selectedRating);
             } catch (error) {
               console.error('Feedback error:', error);
             }
           });
         });
+
+        ratingButtons.forEach(btn => {
+          btn.addEventListener('mouseover', () => {
+            const hoveredRating = parseInt(btn.dataset.rating);
+            updateStars(hoveredRating);
+          });
+
+          btn.addEventListener('mouseout', () => {
+            updateStars(selectedRating);
+          });
+        });
       }
+
 
       chatContainer.appendChild(messageDiv);
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -438,4 +465,5 @@
     });
   </script>
 </body>
+
 </html>
