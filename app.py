@@ -381,24 +381,15 @@ def get_analytics():
         )
 
         effectiveness = list(
-            db.logs.aggregate(
+            db.feedback.aggregate(
                 [
-                    {
-                        "$lookup": {
-                            "from": "feedback",
-                            "localField": "response",
-                            "foreignField": "bot_response",
-                            "as": "feedback",
-                        }
-                    },
-                    {"$unwind": "$feedback"},
                     {
                         "$group": {
                             "_id": None,
-                            "averageRating": {"$avg": "$feedback.rating"},
+                            "averageRating": {"$avg": "$rating"},
                             "totalSessions": {"$sum": 1},
                         }
-                    },
+                    }
                 ]
             )
         )
@@ -457,8 +448,8 @@ def handle_feedback():
 
         db.feedback.update_one(
             {
-                "bot_response": feedback_data["bot_response"],
                 "user_input": feedback_data["user_input"],
+                "bot_response": feedback_data["bot_response"],
             },
             {"$set": feedback_data},
             upsert=True,

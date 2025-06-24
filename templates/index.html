@@ -244,6 +244,7 @@
     async function initializeAnalytics() {
       try {
         const { data } = await axios.get('/analytics');
+        console.log('Analytics data:', data);
         engagementChart = new Chart(document.getElementById('engagementChart'), {
           type: 'line',
           data: {
@@ -259,20 +260,49 @@
           options: { responsive: true, maintainAspectRatio: false }
         });
 
+        const uniqueLabels = [...new Set(data.sentiment_distribution.map(d => d._id))];
+        const colorPalette = [
+          '#6366f1', // Indigo
+          '#60a5fa', // Blue
+          '#34d399', // Green
+          '#fbbf24', // Yellow
+          '#f87171', // Red
+          '#a78bfa', // Purple
+          '#f472b6', // Pink
+          '#facc15', // Amber
+          '#38bdf8', // Sky
+          '#4ade80', // Emerald
+          '#fb7185', // Rose
+          '#f59e42', // Orange
+          '#10b981', // Teal
+          '#818cf8', // Violet
+          '#e879f9', // Fuchsia
+          '#fde68a', // Light Yellow
+          '#6ee7b7', // Mint
+          '#fca5a5', // Light Red
+          '#c084fc', // Light Purple
+          '#a3e635'  // Lime
+        ];
         sentimentChart = new Chart(document.getElementById('sentimentChart'), {
           type: 'doughnut',
           data: {
-            labels: data.sentiment_distribution.map(d => d._id),
+            labels: uniqueLabels,
             datasets: [{
               data: data.sentiment_distribution.map(d => d.count),
-              backgroundColor: ['#6366f1', '#60a5fa', '#34d399', '#fbbf24']
+              backgroundColor: uniqueLabels.map((_, i) => colorPalette[i % colorPalette.length])
             }]
           },
           options: { responsive: true, maintainAspectRatio: false }
         });
 
-        document.getElementById('avgRating').textContent = data.effectiveness.averageRating?.toFixed(1) || 'N/A';
-        document.getElementById('totalSessions').textContent = data.effectiveness.totalSessions?.toLocaleString() || '0';
+        const avgRating = data.effectiveness.averageRating;
+        document.getElementById('avgRating').textContent =
+          avgRating !== undefined && avgRating !== null ? avgRating.toFixed(1) : 'N/A';
+
+        const totalSessions = data.effectiveness.totalSessions;
+        document.getElementById('totalSessions').textContent =
+          totalSessions !== undefined && totalSessions !== null ? totalSessions.toLocaleString() : '0';
+
       } catch (error) {
         console.error('Analytics error:', error);
       }
