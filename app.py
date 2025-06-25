@@ -57,29 +57,11 @@ gemini_generation_config = {
     "top_p": 0.9,
     "top_k": 50,
     "max_output_tokens": 2000,
-    "response_mime_type": "application/json",
-    "response_schema": {
-        "type": "object",
-        "properties": {
-            "Empathetic Acknowledgement": {"type": "string"},
-            "Practical Suggestions": {
-                "type": "array",
-                "items": {"type": "string"},
-            },
-            "Encouraging Closing Line": {"type": "string"},
-            "CBT-style Reflection Tip": {"type": "string"},
-        },
-        "required": [
-            "Empathetic Acknowledgement",
-            "Practical Suggestions",
-            "Encouraging Closing Line",
-            "CBT-style Reflection Tip",
-        ],
-    },
 }
 
 model = genai.GenerativeModel(
-    model_name="gemini-2.0-flash", generation_config=gemini_generation_config
+    model_name="gemini-1.5-flash",
+    generation_config=gemini_generation_config
 )
 
 SAFETY_SETTINGS = {
@@ -110,6 +92,28 @@ FEEDBACK_SCHEMA = {
         "bot_response": {"type": "string"},
     },
     "required": ["rating", "user_input", "bot_response"],
+}
+
+# Define expected response schema for validation
+RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "Empathetic Acknowledgement": {"type": "string"},
+        "Practical Suggestions": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 3,
+            "maxItems": 3
+        },
+        "Encouraging Closing Line": {"type": "string"},
+        "CBT-style Reflection Tip": {"type": "string"},
+    },
+    "required": [
+        "Empathetic Acknowledgement",
+        "Practical Suggestions",
+        "Encouraging Closing Line",
+        "CBT-style Reflection Tip",
+    ],
 }
 
 
@@ -182,22 +186,26 @@ class MentorAI:
             )
         return conversation
 
-    def format_response(self, emotions, suggestions, reflection):
-        acknowledgement = f"Hey, I can feel that you're feeling {', '.join(emotions)}. It's okay to feel this way. You're not alone in this."
+    def format_response(self, response_dict):
+        """Convert the structured response to a natural language format"""
+        try:
+            acknowledgement = response_dict["Empathetic Acknowledgement"]
+            suggestions = response_dict["Practical Suggestions"]
+            closing = response_dict["Encouraging Closing Line"]
+            reflection = response_dict["CBT-style Reflection Tip"]
 
-        suggestions_text = "\nHere are three suggestions that might help:"
-        for i, suggestion in enumerate(suggestions, 1):
-            suggestions_text += f"\n  {i}. {suggestion}"
+            suggestions_text = "\nHere are three suggestions that might help:"
+            for i, suggestion in enumerate(suggestions, 1):
+                suggestions_text += f"\n  {i}. {suggestion}"
 
-        encouraging_line = (
-            "\nKeep going, you're doing great! Small steps lead to big changes."
-        )
-
-        reflection_tip = f"\nA helpful reflection for you: {reflection}"
-
-        formatted_response = f"{acknowledgement}\n{suggestions_text}\n{encouraging_line}\n{reflection_tip}"
-
-        return formatted_response
+            return f"{acknowledgement}\n{suggestions_text}\n{closing}\n\n{reflection}"
+        except KeyError as e:
+            logger.error(f"Response missing key: {str(e)}")
+            # Fallback to simple concatenation
+            return "\n".join(
+                f"{k}: {v if not isinstance(v, list) else ', '.join(v)}"
+                for k, v in response_dict.items()
+            )
 
     def generate_response(self, user_input, emotions):
         try:
@@ -210,24 +218,53 @@ class MentorAI:
                 User Emotions: {', '.join([e['label'] for e in emotions])}
                 User Query: {user_input}
 
-                You're Ava, an emotionally intelligent AI mentor. Respond with the required structure only and be concise Make sure the Practical Solutions part contains exactly 3 solutions, not more and not less.
-                Ensure the response is **under 200 words**.
+                Respond in the following strict JSON format only:
+                {{
+                    "Empathetic Acknowledgement": "Your empathetic acknowledgement here",
+                    "Practical Suggestions": [
+                        "Suggestion 1",
+                        "Suggestion 2",
+                        "Suggestion 3"
+                    ],
+                    "Encouraging Closing Line": "Your encouraging closing line",
+                    "CBT-style Reflection Tip": "Your CBT reflection tip"
+                }}
+
+                Guidelines:
+                1. Keep total response under 200 words
+                2. Make Practical Suggestions exactly 3 items
+                3. Be concise and emotionally intelligent
             """
             response = model.generate_content(prompt, safety_settings=SAFETY_SETTINGS)
-
-            formatted_response = self.format_response(
-                [e["label"] for e in emotions],
-                ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
-                "Remember to reflect on how you handle challenges.",
-            )
-
-            text = response.text.replace("*", "")
-
-            # print(text)
-            return text
+            
+            # Clean and parse response
+            text = response.text.strip()
+            
+            # Remove markdown code blocks if present
+            if text.startswith("```json"):
+                text = text[7:-3].strip()
+            elif text.startswith("```"):
+                text = text[3:-3].strip()
+                
+            # Parse JSON
+            response_dict = json.loads(text)
+            
+            # Validate structure
+            validate(instance=response_dict, schema=RESPONSE_SCHEMA)
+            
+            # Format to natural language
+            formatted_response = self.format_response(response_dict)
+            return formatted_response, response_dict
+            
+        except json.JSONDecodeError:
+            logger.error("Failed to parse response as JSON")
+            return "I'm having trouble formulating a response. Could you try rephrasing your question?", {}
+        except ValidationError as e:
+            logger.error(f"Response validation failed: {str(e)}")
+            return "I'm working on improving my responses. Please try again.", {}
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}")
-            return "I'm currently improving my responses. Please try rephrasing your question."
+            return "I'm currently improving my responses. Please try rephrasing your question.", {}
 
     def process_audio(self, audio_bytes):
         try:
@@ -263,7 +300,7 @@ def handle_chat():
             return jsonify({"error": "Unsafe input detected"}), 400
 
         emotions = mentor_ai.analyze_sentiment(message)
-        response_text = mentor_ai.generate_response(message, emotions)
+        response_text, structured_response = mentor_ai.generate_response(message, emotions)
 
         # Daily mood reminder
         today = datetime.datetime.now(datetime.timezone.utc).date()
@@ -309,11 +346,9 @@ def handle_chat():
             }
         )
 
-        gemini_json = json.loads(response_text)
-        print(gemini_json)
         return jsonify(
             {
-                "structured_response": gemini_json,
+                "structured_response": structured_response,
                 "audio_response": audio_base64,
                 "sentiment": [e["label"] for e in emotions],
             }
@@ -457,8 +492,7 @@ def handle_feedback():
         return jsonify({"status": "success"})
 
     except ValidationError as e:
-        print("Validation failed:", e.message)
-        print("Invalid data:", data)
+        logger.error(f"Feedback validation failed: {str(e)}")
         return jsonify({"error": "Invalid feedback format"}), 400
     except PyMongoError as e:
         logger.error(f"Feedback error: {str(e)}")
