@@ -5,7 +5,7 @@ import json
 import logging
 import pymongo
 import google.generativeai as genai
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_cors import CORS
@@ -20,10 +20,12 @@ from jsonschema import validate, ValidationError
 from huggingface_hub import InferenceClient
 from transformers import pipeline
 import re
+import bcrypt
 
 # Configuration
 load_dotenv()
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'blaa'
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Rate Limiting
@@ -282,10 +284,65 @@ class MentorAI:
 mentor_ai = MentorAI()
 
 
-@app.route("/")
-@limiter.limit("10/minute")
-def home():
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if "user_id" in session:
+        return redirect(url_for("dashboard"))
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        user = db.auth.find_one({"username": username})
+        if user and bcrypt.checkpw(password.encode("utf-8"), user["password"]):
+            session["user_id"] = str(user["_id"])
+            return redirect(url_for("dashboard"))
+        else:
+            return render_template("index.html", error="Invalid username or password.")
+
     return render_template("index.html")
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if "user_id" in session:
+        return redirect(url_for("dashboard"))
+    if request.method == "POST":
+        username = request.form.get("username")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        if not username or not email or not password:
+            return render_template("signup.html", error="Username, email, and password are required.")
+
+        if db.auth.find_one({"username": username}):
+            return render_template("signup.html", error="Username already registered.")
+        if db.auth.find_one({"email": email}):
+            return render_template("signup.html", error="Email already registered.")
+
+        hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+
+        result = db.auth.insert_one({
+            "username": username,
+            "email": email,
+            "password": hashed_pw
+        })
+
+        session["user_id"] = str(result.inserted_id)
+        return redirect(url_for("dashboard"))
+
+    return render_template("signup.html")
+
+@app.route("/logout")
+def logout():
+    session.pop("user_id", None)
+    return redirect(url_for("login"))
+
+
+@app.route("/dashboard")
+@limiter.limit("10/minute")
+def dashboard():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("dashboard.html")
 
 
 @app.route("/chat", methods=["POST"])
@@ -294,6 +351,9 @@ def handle_chat():
     try:
         data = request.get_json()
         validate(instance=data, schema=CHAT_SCHEMA)
+        userid = session.get("user_id")
+        if not userid:
+            return jsonify({"error": "Unauthorized"}), 401
 
         message = data["message"].strip()[:500]
         if re.search(r"(ignore|forget|pretend|as an ai)", message, re.IGNORECASE):
@@ -304,14 +364,16 @@ def handle_chat():
 
         # Daily mood reminder
         today = datetime.datetime.now(datetime.timezone.utc).date()
-        already_chatted_today = db.logs.find_one(
-            {
-                "timestamp": {
-                    "$gte": datetime.datetime.combine(today, datetime.time.min),
-                    "$lte": datetime.datetime.combine(today, datetime.time.max),
-                }
-            }
-        )
+        user_logs = db.logs.find_one({"userid": userid})
+        already_chatted_today = False
+
+        if user_logs:
+            for log in user_logs.get("messages", []):
+                log_time = log["timestamp"]
+                if log_time.date() == today:
+                    already_chatted_today = True
+                    break
+        
         if not already_chatted_today:
             response_text = (
                 "Hey! Just checking in—how are you feeling today? Remember, sharing a little goes a long way. 😊\n\n"
@@ -336,14 +398,18 @@ def handle_chat():
         audio_io.seek(0)
         audio_base64 = base64.b64encode(audio_io.read()).decode("utf-8")
 
-        db.logs.insert_one(
-            {
-                "user_input": message,
-                "response": response_text,
-                "emotions": [e["label"] for e in emotions],
-                "timestamp": datetime.datetime.now(datetime.timezone.utc),
-                "type": "text",
-            }
+        message_doc = {
+            "user_input": message,
+            "response": response_text,
+            "emotions": [e["label"] for e in emotions],
+            "timestamp": datetime.datetime.now(datetime.timezone.utc),
+            "type": "text",
+        }
+
+        db.logs.update_one(
+            {"userid": userid},
+            {"$push": {"messages": message_doc}},
+            upsert=True
         )
 
         return jsonify(

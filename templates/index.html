@@ -1,499 +1,223 @@
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>MentorAI - Digital Mentorship Platform</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <style>
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
-      }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentor Chatbot - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      70% {
-        box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
-      }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-      100% {
-        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
-      }
-    }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
 
-    .pulse-active {
-      animation: pulse 1.5s infinite;
-    }
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-    .message-enter {
-      animation: slideIn 0.3s ease-out;
-    }
+        .logo h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
 
-    @keyframes slideIn {
-      from {
-        transform: translateY(20px);
-        opacity: 0;
-      }
+        .logo p {
+            color: #666;
+            font-size: 0.9em;
+        }
 
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
 
-    .dashboard-section {
-      display: none;
-    }
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
 
-    .dashboard-section.active {
-      display: block;
-    }
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
 
-    .sidebar-backdrop {
-      display: none;
-    }
+        .form-group label {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #999;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
 
-    @media (max-width: 1023px) {
-      #sidebar {
-        position: fixed;
-        top: 0;
-        left: -100%;
-        z-index: 50;
-        height: 100vh;
-        transition: left 0.3s;
-      }
+        .form-group input:focus+label,
+        .form-group input:not(:placeholder-shown)+label {
+            top: -10px;
+            left: 10px;
+            background: white;
+            padding: 0 5px;
+            color: #667eea;
+            font-size: 12px;
+        }
 
-      #sidebar.active {
-        left: 0;
-      }
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
 
-      .sidebar-backdrop.active {
-        display: block;
-      }
-    }
-  </style>
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .forgot-password a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e5e9;
+        }
+
+        .signup-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .shape {
+            animation-delay: calc((var(--i, 0)) * 500ms);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+    </style>
 </head>
 
-<body class="bg-gray-50 font-sans h-screen flex flex-col overflow-hidden">
-  <!-- Header -->
-  <header class="bg-indigo-600 text-white py-4 px-4 sm:px-6 flex items-center justify-between shadow-lg">
-    <div class="flex items-center space-x-3">
-      <button id="sidebarToggle" class="lg:hidden">
-        <span class="material-icons text-2xl">menu</span>
-      </button>
-      <h1 class="text-xl font-bold">MentorAI</h1>
+<body>
+    <div class="floating-shapes">
+        <div class="shape" style="--i:0"></div>
+        <div class="shape" style="--i:1"></div>
+        <div class="shape" style="--i:2"></div>
+        <div class="shape" style="--i:3"></div>
+        <div class="shape" style="--i:4"></div>
+        <div class="shape" style="--i:5"></div>
+        <div class="shape" style="--i:6"></div>
+        <div class="shape" style="--i:7"></div>
     </div>
-    <div class="flex items-center space-x-2 sm:space-x-4">
-      <div class="flex items-center space-x-2 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg">
-        <span class="material-icons">psychology</span>
-        <span class="text-sm hidden sm:inline">Emotion-Aware Mentorship</span>
-      </div>
+
+    <div class="login-container">
+        <div class="logo">
+            <h1>🤖</h1>
+            <h1>MentorBot</h1>
+            <p>Your AI Learning Companion</p>
+        </div>
+
+        <form method="POST">
+            <div class="form-group">
+                <input type="text" name="username" id="username" placeholder=" " required>
+                <label for="username">Username</label>
+            </div>
+
+            <div class="form-group">
+                <input type="password" name="password" id="password" placeholder=" " required>
+                <label for="password">Password</label>
+            </div>
+
+            <button type="submit" class="login-btn">Sign In</button>
+        </form>
+        {% if error %}
+        <div style="text-align: center; margin-bottom: 15px;">
+            <p style="color: red; display: inline-block; margin: 0;">{{ error }}</p>
+        </div>
+        {% endif %}
+
+        <div class="forgot-password">
+            <a href="#">Forgot your password?</a>
+        </div>
+
+        <div class="signup-link">
+            <a href="/signup" style="text-decoration: none;">New User? Sign Up</a>
+        </div>
     </div>
-  </header>
-
-  <div class="flex flex-1 overflow-hidden relative">
-    <!-- Sidebar Backdrop -->
-    <div class="sidebar-backdrop fixed inset-0 z-40 bg-black/50 lg:hidden" id="sidebarBackdrop"></div>
-
-    <!-- Sidebar -->
-    <aside id="sidebar" class="bg-white w-64 shadow-xl fixed lg:static lg:transform-none z-50">
-      <nav class="p-3 sm:p-4 space-y-1 sm:space-y-2">
-        <a href="#chat" class="flex items-center p-2 sm:p-3 rounded-lg bg-indigo-50 text-indigo-700">
-          <span class="material-icons mr-2 sm:mr-3">forum</span>
-          Chat Interface
-        </a>
-        <a href="#analytics" class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-100">
-          <span class="material-icons mr-2 sm:mr-3">analytics</span>
-          Analytics Dashboard
-        </a>
-        <a href="#history" class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-100">
-          <span class="material-icons mr-2 sm:mr-3">history</span>
-          Session History
-        </a>
-      </nav>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="flex-1 overflow-auto p-4 sm:p-6">
-      <!-- Chat Section -->
-      <div id="chatSection" class="dashboard-section active">
-        <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-sm">
-          <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold">AI Mentorship Chat</h2>
-          </div>
-
-          <div id="chatContainer" class="h-80 sm:h-96 overflow-y-auto p-4 space-y-4">
-            <div class="flex justify-start">
-              <div class="bg-gray-100 p-3 sm:p-4 rounded-xl max-w-[85%] sm:max-w-[80%]">
-                <p class="text-sm sm:text-base">Hello! I'm your AI mentor here to provide guidance and
-                  support. Feel free to share your thoughts or questions.</p>
-                <div class="mt-2 text-xs text-gray-500 flex items-center">
-                  <span class="material-icons text-sm mr-1">engineering</span>
-                  24/7 Support • Emotion Detection • CBT Techniques
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
-            <div class="flex items-center gap-2 sm:gap-3">
-              <input id="messageInput" type="text" placeholder="Type your message..."
-                class="flex-1 px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base rounded-lg border focus:ring-2 focus:ring-indigo-500">
-              <button id="voiceButton" class="p-2 rounded-lg bg-white border hover:bg-gray-100">
-                <span class="material-icons text-indigo-600 text-xl">mic</span>
-              </button>
-              <button id="sendButton"
-                class="px-3 py-2 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                <span class="material-icons text-xl">send</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Analytics Dashboard -->
-      <div id="analyticsSection" class="dashboard-section">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-            <h3 class="text-lg font-semibold mb-4">Engagement Trends</h3>
-            <div class="h-64 sm:h-72">
-              <canvas id="engagementChart"></canvas>
-            </div>
-          </div>
-
-          <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-            <h3 class="text-lg font-semibold mb-4">Emotional Distribution</h3>
-            <div class="h-64 sm:h-72">
-              <canvas id="sentimentChart"></canvas>
-            </div>
-          </div>
-
-          <div class="md:col-span-2 bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-            <h3 class="text-lg font-semibold mb-4">Performance Metrics</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div class="bg-indigo-50 p-4 sm:p-6 rounded-lg">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <p class="text-sm text-gray-600">Average Rating</p>
-                    <p class="text-2xl sm:text-3xl font-bold text-indigo-600" id="avgRating">4.8</p>
-                  </div>
-                  <span class="material-icons text-indigo-600 text-3xl sm:text-4xl">star_rate</span>
-                </div>
-              </div>
-              <div class="bg-white border p-4 sm:p-6 rounded-lg">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <p class="text-sm text-gray-600">Total Sessions</p>
-                    <p class="text-2xl sm:text-3xl font-bold text-gray-800" id="totalSessions">1,234
-                    </p>
-                  </div>
-                  <span class="material-icons text-gray-600 text-3xl sm:text-4xl">forum</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Session History -->
-      <div id="historySection" class="dashboard-section">
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold">Recent Mentorship Sessions</h2>
-          </div>
-          <div class="overflow-x-auto max-h-[500px] sm:max-h-[600px]">
-            <table class="w-full">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                    Time</th>
-                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                    User Input</th>
-                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                    AI Response</th>
-                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
-                    Emotions</th>
-                </tr>
-              </thead>
-              <tbody id="historyContainer" class="divide-y divide-gray-200 text-xs sm:text-sm"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <script>
-    let engagementChart, sentimentChart;
-    const chatContainer = document.getElementById('chatContainer');
-    const messageInput = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendButton');
-    const voiceButton = document.getElementById('voiceButton');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-    let recognition;
-    let lastUserMessage = '';
-
-    function toggleSidebar() {
-      sidebar.classList.toggle('active');
-      sidebarBackdrop.classList.toggle('active');
-    }
-
-    async function initializeAnalytics() {
-      try {
-        const { data } = await axios.get('/analytics');
-        console.log('Analytics data:', data);
-        engagementChart = new Chart(document.getElementById('engagementChart'), {
-          type: 'line',
-          data: {
-            labels: data.engagement.map(d => d._id),
-            datasets: [{
-              label: 'Daily Interactions',
-              data: data.engagement.map(d => d.count),
-              borderColor: '#6366f1',
-              backgroundColor: 'rgba(99, 102, 241, 0.05)',
-              tension: 0.3
-            }]
-          },
-          options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        const uniqueLabels = [...new Set(data.sentiment_distribution.map(d => d._id))];
-        const colorPalette = [
-          '#6366f1', // Indigo
-          '#60a5fa', // Blue
-          '#34d399', // Green
-          '#fbbf24', // Yellow
-          '#f87171', // Red
-          '#a78bfa', // Purple
-          '#f472b6', // Pink
-          '#facc15', // Amber
-          '#38bdf8', // Sky
-          '#4ade80', // Emerald
-          '#fb7185', // Rose
-          '#f59e42', // Orange
-          '#10b981', // Teal
-          '#818cf8', // Violet
-          '#e879f9', // Fuchsia
-          '#fde68a', // Light Yellow
-          '#6ee7b7', // Mint
-          '#fca5a5', // Light Red
-          '#c084fc', // Light Purple
-          '#a3e635'  // Lime
-        ];
-        sentimentChart = new Chart(document.getElementById('sentimentChart'), {
-          type: 'doughnut',
-          data: {
-            labels: uniqueLabels,
-            datasets: [{
-              data: data.sentiment_distribution.map(d => d.count),
-              backgroundColor: uniqueLabels.map((_, i) => colorPalette[i % colorPalette.length])
-            }]
-          },
-          options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        const avgRating = data.effectiveness.averageRating;
-        document.getElementById('avgRating').textContent =
-          avgRating !== undefined && avgRating !== null ? avgRating.toFixed(1) : 'N/A';
-
-        const totalSessions = data.effectiveness.totalSessions;
-        document.getElementById('totalSessions').textContent =
-          totalSessions !== undefined && totalSessions !== null ? totalSessions.toLocaleString() : '0';
-
-      } catch (error) {
-        console.error('Analytics error:', error);
-      }
-    }
-
-    async function loadHistory() {
-      try {
-        const { data } = await axios.get('/history');
-        const table = document.getElementById('historyContainer');
-        table.innerHTML = '';
-        data.forEach(entry => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td class="px-3 py-2 sm:px-4">${new Date(entry.timestamp).toLocaleString()}</td>
-            <td class="px-3 py-2 sm:px-4">${entry.user_input}</td>
-            <td class="px-3 py-2 sm:px-4">${entry.response}</td>
-            <td class="px-3 py-2 sm:px-4">${entry.emotions.join(', ')}</td>
-          `;
-          table.appendChild(row);
-        });
-      } catch (err) {
-        console.error('History error:', err);
-      }
-    }
-
-    function addMessage(text, isUser = false, emotions = []) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} message-enter`;
-
-      const emotionsBadges = emotions.map(e =>
-        `<span class="px-2 py-1 text-[10px] sm:text-xs rounded-full bg-indigo-100 text-indigo-700">${e}</span>`
-      ).join(' ');
-
-      messageDiv.innerHTML = `
-        <div class="max-w-[85%] sm:max-w-[80%] p-3 sm:p-4 rounded-xl ${isUser ? 'bg-indigo-600 text-white' : 'bg-gray-100'}">
-          <p class="text-sm sm:text-base">${text}</p>
-          ${!isUser ? `
-          <div class="mt-2 sm:mt-3 flex items-center justify-between flex-wrap gap-2">
-            <div class="flex space-x-1">${emotionsBadges}</div>
-            <div class="flex space-x-1 text-sm">
-              ${[1, 2, 3, 4, 5].map(i => `
-                <button class="rating-btn p-1 hover:text-yellow-400" data-rating="${i}">
-                  <span class="material-icons text-sm">star</span>
-                </button>
-              `).join('')}
-            </div>
-          </div>` : ''}
-        </div>
-      `;
-
-      if (!isUser) {
-        const ratingButtons = messageDiv.querySelectorAll('.rating-btn');
-        let selectedRating = 0;
-
-        const updateStars = (rating) => {
-          ratingButtons.forEach(b => {
-            const r = parseInt(b.dataset.rating, 10);
-            b.classList.toggle('text-yellow-400', r <= rating);
-          });
-        };
-
-        ratingButtons.forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const rating = parseInt(btn.dataset.rating, 10);
-            const plainBotResponse = text.replace(/<br\s*\/?>/gi, '\n')
-              .replace(/<[^>]+>/g, '')
-              .trim();
-
-            try {
-              await axios.post('/feedback', {
-                rating: rating,
-                user_input: lastUserMessage,
-                bot_response: plainBotResponse
-              }, {
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-              });
-
-              selectedRating = rating;
-              updateStars(selectedRating);
-            } catch (error) {
-              console.error('Feedback error:', error);
-            }
-          });
-        });
-
-        ratingButtons.forEach(btn => {
-          btn.addEventListener('mouseover', () => {
-            const hoveredRating = parseInt(btn.dataset.rating);
-            updateStars(hoveredRating);
-          });
-
-          btn.addEventListener('mouseout', () => {
-            updateStars(selectedRating);
-          });
-        });
-      }
-
-
-      chatContainer.appendChild(messageDiv);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    async function sendMessage() {
-      const msg = messageInput.value.trim();
-      if (!msg) return;
-
-      lastUserMessage = msg;
-      addMessage(msg, true);
-      messageInput.value = '';
-      sendButton.disabled = true;
-
-      try {
-        const { data } = await axios.post('/chat', { message: msg });
-        const r = data.structured_response;
-        console.log('Response:', r);
-        console.log(typeof r)
-        const suggestionsHTML = r["Practical Suggestions"]
-          .map(s => `• ${s}<br>`)
-          .join("");
-        const fullMessage = `
-          ${r["Empathetic Acknowledgement"]}<br><br>
-
-          🔧 Suggestions:<br>
-          ${suggestionsHTML}<br>
-
-          💡 Reflection: ${r["CBT-style Reflection Tip"]}<br>
-          💬 ${r["Encouraging Closing Line"]}<br>
-        `.trim();
-        addMessage(fullMessage, false, data.sentiment);
-        if (data.audio_response) {
-          const audio = new Audio("data:audio/mp3;base64," + data.audio_response);
-          audio.play();
-        }
-      } catch (err) {
-        console.error('Chat error:', err);
-        addMessage('Sorry, I had trouble responding. Please try again.', false);
-      } finally {
-        sendButton.disabled = false;
-      }
-    }
-
-    function initializeVoice() {
-      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'en-US';
-
-        recognition.onresult = (e) => {
-          const transcript = e.results[0][0].transcript;
-          messageInput.value = transcript;
-          sendMessage();
-        };
-
-        recognition.onerror = (e) => console.error('Voice error:', e.error);
-      } else {
-        voiceButton.style.display = 'none';
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.remove('active'));
-      document.getElementById('chatSection').classList.add('active');
-
-      document.querySelectorAll('a[href^="#"]').forEach(link => {
-        link.addEventListener('click', e => {
-          e.preventDefault();
-          const targetId = link.getAttribute('href').substring(1);
-          document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.remove('active'));
-          document.getElementById(`${targetId}Section`).classList.add('active');
-          if (window.innerWidth < 1024) toggleSidebar();
-        });
-      });
-
-      sendButton.addEventListener('click', sendMessage);
-      messageInput.addEventListener('keypress', e => {
-        if (e.key === 'Enter') sendMessage();
-      });
-
-      initializeVoice();
-      voiceButton.addEventListener('click', () => recognition?.start());
-      document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
-      sidebarBackdrop.addEventListener('click', toggleSidebar);
-
-      initializeAnalytics();
-      loadHistory();
-    });
-  </script>
 </body>
 
 </html>
