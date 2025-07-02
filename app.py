@@ -21,11 +21,12 @@ from huggingface_hub import InferenceClient
 from transformers import pipeline
 import re
 import bcrypt
+from bson import ObjectId
 
 # Configuration
 load_dotenv()
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'blaa'
+app.config["SECRET_KEY"] = "blaa"
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Rate Limiting
@@ -62,8 +63,7 @@ gemini_generation_config = {
 }
 
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    generation_config=gemini_generation_config
+    model_name="gemini-1.5-flash", generation_config=gemini_generation_config
 )
 
 SAFETY_SETTINGS = {
@@ -105,7 +105,7 @@ RESPONSE_SCHEMA = {
             "type": "array",
             "items": {"type": "string"},
             "minItems": 3,
-            "maxItems": 3
+            "maxItems": 3,
         },
         "Encouraging Closing Line": {"type": "string"},
         "CBT-style Reflection Tip": {"type": "string"},
@@ -238,35 +238,41 @@ class MentorAI:
                 3. Be concise and emotionally intelligent
             """
             response = model.generate_content(prompt, safety_settings=SAFETY_SETTINGS)
-            
+
             # Clean and parse response
             text = response.text.strip()
-            
+
             # Remove markdown code blocks if present
             if text.startswith("```json"):
                 text = text[7:-3].strip()
             elif text.startswith("```"):
                 text = text[3:-3].strip()
-                
+
             # Parse JSON
             response_dict = json.loads(text)
-            
+
             # Validate structure
             validate(instance=response_dict, schema=RESPONSE_SCHEMA)
-            
+
             # Format to natural language
             formatted_response = self.format_response(response_dict)
             return formatted_response, response_dict
-            
+
         except json.JSONDecodeError:
             logger.error("Failed to parse response as JSON")
-            return "I'm having trouble formulating a response. Could you try rephrasing your question?", {}
+            return (
+                "I'm having trouble formulating a response. Could you try rephrasing your question?",
+                {},
+            )
         except ValidationError as e:
             logger.error(f"Response validation failed: {str(e)}")
             return "I'm working on improving my responses. Please try again.", {}
         except Exception as e:
             logger.error(f"Response generation failed: {str(e)}")
-            return "I'm currently improving my responses. Please try rephrasing your question.", {}
+            return (
+                "I'm currently improving my responses. Please try rephrasing your question.",
+                {},
+            )
 
     def process_audio(self, audio_bytes):
         try:
@@ -301,6 +307,7 @@ def login():
 
     return render_template("index.html")
 
+
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if "user_id" in session:
@@ -311,7 +318,9 @@ def signup():
         password = request.form.get("password")
 
         if not username or not email or not password:
-            return render_template("signup.html", error="Username, email, and password are required.")
+            return render_template(
+                "signup.html", error="Username, email, and password are required."
+            )
 
         if db.auth.find_one({"username": username}):
             return render_template("signup.html", error="Username already registered.")
@@ -320,16 +329,15 @@ def signup():
 
         hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
-        result = db.auth.insert_one({
-            "username": username,
-            "email": email,
-            "password": hashed_pw
-        })
+        result = db.auth.insert_one(
+            {"username": username, "email": email, "password": hashed_pw}
+        )
 
         session["user_id"] = str(result.inserted_id)
         return redirect(url_for("dashboard"))
 
     return render_template("signup.html")
+
 
 @app.route("/logout")
 def logout():
@@ -353,14 +361,16 @@ def handle_chat():
         validate(instance=data, schema=CHAT_SCHEMA)
         userid = session.get("user_id")
         if not userid:
-            return jsonify({"error": "Unauthorized"}), 401
+            return redirect(url_for("login"))
 
         message = data["message"].strip()[:500]
         if re.search(r"(ignore|forget|pretend|as an ai)", message, re.IGNORECASE):
             return jsonify({"error": "Unsafe input detected"}), 400
 
         emotions = mentor_ai.analyze_sentiment(message)
-        response_text, structured_response = mentor_ai.generate_response(message, emotions)
+        response_text, structured_response = mentor_ai.generate_response(
+            message, emotions
+        )
 
         # Daily mood reminder
         today = datetime.datetime.now(datetime.timezone.utc).date()
@@ -373,7 +383,7 @@ def handle_chat():
                 if log_time.date() == today:
                     already_chatted_today = True
                     break
-        
+
         if not already_chatted_today:
             response_text = (
                 "Hey! Just checking in—how are you feeling today? Remember, sharing a little goes a long way. 😊\n\n"
@@ -407,9 +417,7 @@ def handle_chat():
         }
 
         db.logs.update_one(
-            {"userid": userid},
-            {"$push": {"messages": message_doc}},
-            upsert=True
+            {"userid": userid}, {"$push": {"messages": message_doc}}, upsert=True
         )
 
         return jsonify(
@@ -445,12 +453,19 @@ def get_journal():
 @app.route("/analytics")
 def get_analytics():
     try:
+        if "user_id" not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        user_id = session["user_id"]
+
         engagement = list(
             db.logs.aggregate(
                 [
+                    {"$match": {"userid": user_id}},
+                    {"$unwind": "$messages"},
                     {
                         "$match": {
-                            "timestamp": {
+                            "messages.timestamp": {
                                 "$gte": datetime.datetime.now(datetime.timezone.utc)
                                 - datetime.timedelta(days=30)
                             }
@@ -461,7 +476,7 @@ def get_analytics():
                             "_id": {
                                 "$dateToString": {
                                     "format": "%Y-%m-%d",
-                                    "date": "$timestamp",
+                                    "date": "$messages.timestamp",
                                 }
                             },
                             "count": {"$sum": 1},
@@ -475,8 +490,10 @@ def get_analytics():
         sentiment = list(
             db.logs.aggregate(
                 [
-                    {"$unwind": "$emotions"},
-                    {"$group": {"_id": "$emotions", "count": {"$sum": 1}}},
+                    {"$match": {"userid": user_id}},
+                    {"$unwind": "$messages"},
+                    {"$unwind": "$messages.emotions"},
+                    {"$group": {"_id": "$messages.emotions", "count": {"$sum": 1}}},
                 ]
             )
         )
@@ -484,13 +501,14 @@ def get_analytics():
         effectiveness = list(
             db.feedback.aggregate(
                 [
+                    {"$match": {"userid": user_id}},
                     {
                         "$group": {
                             "_id": None,
                             "averageRating": {"$avg": "$rating"},
                             "totalSessions": {"$sum": 1},
                         }
-                    }
+                    },
                 ]
             )
         )
@@ -502,6 +520,7 @@ def get_analytics():
                 "effectiveness": effectiveness[0] if effectiveness else {},
             }
         )
+
     except PyMongoError as e:
         logger.error(f"Analytics error: {str(e)}")
         return jsonify({"error": "Failed to generate analytics"}), 500
@@ -511,23 +530,34 @@ def get_analytics():
 @limiter.limit("20/minute")
 def get_history():
     try:
+        if "user_id" not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        user_id = session["user_id"]
+
         history = list(
-            db.logs.find(
-                {"type": "text"},
-                {
+            db.logs.aggregate([
+                {"$match": {"userid": user_id}},
+                {"$unwind": "$messages"},
+                {"$match": {"messages.type": "text"}},
+                {"$sort": {"messages.timestamp": -1}},
+                {"$limit": 50},
+                {"$project": {
                     "_id": 0,
-                    "user_input": 1,
-                    "response": 1,
-                    "timestamp": 1,
-                    "emotions": 1,
-                },
-            )
-            .sort("timestamp", -1)
-            .limit(50)
+                    "user_input": "$messages.user_input",
+                    "response": "$messages.response",
+                    "timestamp": "$messages.timestamp",
+                    "emotions": "$messages.emotions"
+                }}
+            ])
         )
+        print(f"History for user {user_id}: {history}")
+
         for entry in history:
             entry["timestamp"] = entry["timestamp"].isoformat()
+
         return jsonify(history)
+
     except PyMongoError as e:
         logger.error(f"History error: {str(e)}")
         return jsonify({"error": "Failed to retrieve history"}), 500
@@ -537,10 +567,16 @@ def get_history():
 @limiter.limit("10/minute")
 def handle_feedback():
     try:
+        if "user_id" not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        user_id = session["user_id"]
+
         data = request.get_json()
         validate(instance=data, schema=FEEDBACK_SCHEMA)
 
         feedback_data = {
+            "userid": user_id,
             "rating": data["rating"],
             "user_input": data.get("user_input", "")[:200],
             "bot_response": data.get("bot_response", "")[:500],
@@ -549,6 +585,7 @@ def handle_feedback():
 
         db.feedback.update_one(
             {
+                "userid": user_id,
                 "user_input": feedback_data["user_input"],
                 "bot_response": feedback_data["bot_response"],
             },
