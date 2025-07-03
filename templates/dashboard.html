@@ -340,7 +340,8 @@
       }
     }
 
-    function addMessage(text, isUser = false, emotions = []) {
+    function addMessage(text, isUser = false, emotions = [], userInput = '', botTimestamp) {
+      console.log('📨 Initial bot timestamp:', botTimestamp);
       const messageDiv = document.createElement('div');
       messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} message-enter`;
 
@@ -386,7 +387,8 @@
             try {
               await axios.post('/feedback', {
                 rating: rating,
-                user_input: lastUserMessage,
+                user_input: userInput,
+                message_timestamp: botTimestamp,
                 bot_response: plainBotResponse
               }, {
                 headers: {
@@ -445,7 +447,7 @@
           💡 Reflection: ${r["CBT-style Reflection Tip"]}<br>
           💬 ${r["Encouraging Closing Line"]}<br>
         `.trim();
-        addMessage(fullMessage, false, data.sentiment);
+        addMessage(fullMessage, false, data.sentiment, msg, data.timestamp);
         if (data.audio_response) {
           const audio = new Audio("data:audio/mp3;base64," + data.audio_response);
           audio.play();

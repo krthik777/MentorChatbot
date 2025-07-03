@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - MentorChatbot</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .user-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .user-item.active {
+            background-color: #e3f2fd;
+        }
+
+        .user-info h4 {
+            margin-bottom: 0.25rem;
+        }
+
+        .user-info small {
+            color: #666;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-online {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .status-offline {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .analytics-section {
+            margin-bottom: 2rem;
+        }
+
+        .message-log {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .message-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .message-user {
+            background-color: #e3f2fd;
+        }
+
+        .message-bot {
+            background-color: #f1f8e9;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .timestamp {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .chart-container {
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>Admin Dashboard</h1>
+        <p>MentorChatbot Management System</p>
+    </div>
+
+    <div class="container">
+        <!-- Statistics Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">1,247</div>
+                <div>Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">89</div>
+                <div>Active Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">5,432</div>
+                <div>Total Messages</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">98.5%</div>
+                <div>Response Rate</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- User List -->
+            <div class="card">
+                <h3>User Management</h3>
+                <input type="text" class="search-box" placeholder="Search users...">
+                <div class="user-list" id="userList">
+                    {% for u in users %}
+                    <div class="user-item" onclick="showUserAnalytics('{{ u._id }}','{{ u.username }}')">
+                        <div class="user-info">
+                            <h4>{{ u.username }}</h4>
+                            <small>{{ u.email }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="card">
+                <h3>User Analytics</h3>
+                <div class="tabs">
+                    <div class="tab active" onclick="showTab('overview', event)">Overview</div>
+                    <div class="tab" onclick="showTab('messages', event)">Messages</div>
+                    <div class="tab" onclick="showTab('activity', event)">Activity</div>
+                </div>
+
+                <div id="overview" class="tab-content active">
+                    <div class="chart-container">
+                        <canvas id="sentimentChart"></canvas>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <p><strong>Total Sessions:</strong> <span id="totalSessions">Loading...</span></p>
+                        <p><strong>Total Sessions Rated:</strong> <span id="totalSessionsRated">Loading...</span></p>
+                        <p><strong>Average Rating:</strong> <span id="averageRating">Loading...</span></p>
+                        <ul id="sentimentDistribution"></ul>
+                    </div>
+                </div>
+
+                <div id="analyticsLogs" class="message-log">
+                </div>
+
+                <div id="activity" class="tab-content">
+                    <div class="chart-container">
+                        <p>Activity Heatmap (Chart.js integration needed)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="analyticsDetails" style="display:none;">
+            <h3 id="analyticsTitle"></h3>
+
+            <div>
+                <h4>Chat Logs</h4>
+                <div class="message-log" id="analyticsLogs"></div>
+            </div>
+
+            <div>
+
+
+                <h4>Feedback Entries</h4>
+                <ul id="analyticsFeedback"></ul>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function selectUser(userId) {
+            document.querySelectorAll('.user-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            event.target.closest('.user-item').classList.add('active');
+
+            loadUserData(userId);
+        }
+
+        function loadUserData(userId) {
+            console.log('Loading data for user:', userId);
+        }
+
+        function showTab(tabName, event) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.getElementById(tabName).classList.add('active');
+            if (event) event.target.classList.add('active');
+        }
+
+
+        document.querySelector('.search-box').addEventListener('input', function (e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const userItems = document.querySelectorAll('.user-item');
+
+            userItems.forEach(item => {
+                const userName = item.querySelector('h4').textContent.toLowerCase();
+                const userEmail = item.querySelector('small').textContent.toLowerCase();
+
+                if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        let sentimentChart = null;
+
+        function showUserAnalytics(userId, username) {
+            document.getElementById('analyticsTitle').innerText = `Analytics: ${username}`;
+
+            fetch(`/admin/user/${userId}/analytics`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('totalSessions').innerText = data.analytics.total_sessions;
+                    document.getElementById('totalSessionsRated').innerText = data.analytics.sessions_rated;
+                    const avgRating = data.analytics.average_rating?.toFixed(1) || "N/A";
+                    document.getElementById('averageRating').innerText = avgRating;
+
+                    const emotions = data.emotions;
+                    const labels = [...new Set(emotions.map(d => d._id))];
+                    const colorPalette = [
+                        '#6366f1', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa',
+                        '#f472b6', '#facc15', '#38bdf8', '#4ade80', '#fb7185', '#f59e42',
+                        '#10b981', '#818cf8', '#e879f9', '#fde68a', '#6ee7b7', '#fca5a5',
+                        '#c084fc', '#a3e635'
+                    ];
+
+                    const dataCounts = labels.map(label =>
+                        emotions.find(e => e._id === label)?.count || 0
+                    );
+
+                    if (sentimentChart) sentimentChart.destroy();
+
+                    sentimentChart = new Chart(document.getElementById('sentimentChart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: dataCounts,
+                                backgroundColor: labels.map((_, i) => colorPalette[i % colorPalette.length])
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right'
+                                }
+                            }
+                        }
+                    });
+
+                    const logsContainer = document.getElementById('analyticsLogs');
+                    logsContainer.innerHTML = '';
+
+                    data.logs.forEach(log => {
+                        console.log(log);
+                        const messageItem = document.createElement('div');
+                        messageItem.classList.add('message-item');
+
+                        const messageUser = document.createElement('div');
+                        messageUser.classList.add('message-user');
+
+                        const messageHeader = document.createElement('div');
+                        messageHeader.classList.add('message-header');
+                        messageHeader.innerHTML = `
+                        <span>${log.user_input}</span>
+                        <span class="timestamp">${log.timestamp}</span>`;
+
+                        const messageBot = document.createElement('div');
+                        messageBot.classList.add('message-bot');
+                        messageBot.innerHTML = `
+                        <p>${log.bot_response}</p>`;
+
+                        messageUser.appendChild(messageHeader);
+                        messageUser.appendChild(messageBot);
+                        if (log.rating !== undefined && log.rating !== null) {
+                            const ratingStars = document.createElement('div');
+                            ratingStars.className = 'flex space-x-1 mt-2';
+
+                            for (let i = 1; i <= 5; i++) {
+                                const star = document.createElement('span');
+                                star.className = 'material-icons';
+                                star.style.color = '#facc15';
+                                star.textContent = 'star';
+                                ratingStars.appendChild(star);
+                            }
+
+                            messageBot.appendChild(ratingStars);
+                        }
+                        messageItem.appendChild(messageUser);
+
+                        logsContainer.appendChild(messageItem);
+                    });
+                });
+        }
+    </script>
+</body>
+
+</html>
+</div>

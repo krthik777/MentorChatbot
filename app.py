@@ -22,6 +22,7 @@ from transformers import pipeline
 import re
 import bcrypt
 from bson import ObjectId
+from dateutil.parser import parse
 
 # Configuration
 load_dotenv()
@@ -350,7 +351,18 @@ def logout():
 def dashboard():
     if "user_id" not in session:
         return redirect(url_for("login"))
-    return render_template("dashboard.html")
+
+    userid = session["user_id"]
+    user = db.auth.find_one({"_id": ObjectId(userid)})
+
+    if not user:
+        return redirect(url_for("login"))
+
+    if user.get("username") == "admin":
+        users = list(db.auth.find({}, {"_id": 1, "username": 1, "email": 1}))
+        return render_template("admin_dashboard.html", users=users)
+
+    return render_template("dashboard.html", user=user)
 
 
 @app.route("/chat", methods=["POST"])
@@ -425,6 +437,7 @@ def handle_chat():
                 "structured_response": structured_response,
                 "audio_response": audio_base64,
                 "sentiment": [e["label"] for e in emotions],
+                "timestamp": message_doc["timestamp"].isoformat(),
             }
         )
 
@@ -502,10 +515,11 @@ def get_analytics():
             db.feedback.aggregate(
                 [
                     {"$match": {"userid": user_id}},
+                    {"$unwind": "$messages"},
                     {
                         "$group": {
                             "_id": None,
-                            "averageRating": {"$avg": "$rating"},
+                            "averageRating": {"$avg": "$messages.rating"},
                             "totalSessions": {"$sum": 1},
                         }
                     },
@@ -526,6 +540,138 @@ def get_analytics():
         return jsonify({"error": "Failed to generate analytics"}), 500
 
 
+@app.route("/admin/user/<user_id>/analytics")
+@limiter.limit("10/minute")
+def user_analytics(user_id):
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    admin_id = session["user_id"]
+    admin_user = db.auth.find_one({"_id": ObjectId(admin_id), "username": "admin"})
+    if not admin_user:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    logs = list(
+        db.logs.aggregate(
+            [
+                {"$match": {"userid": user_id}},
+                {"$unwind": "$messages"},
+                {
+                    "$lookup": {
+                        "from": "feedback",
+                        "let": {
+                            "input": "$messages.user_input",
+                            "ts": "$messages.timestamp",
+                        },
+                        "pipeline": [
+                            {"$match": {"$expr": {"$eq": ["$userid", user_id]}}},
+                            {"$unwind": "$messages"},
+                            {
+                                "$match": {
+                                    "$expr": {
+                                        "$and": [
+                                            {
+                                                "$eq": [
+                                                    "$messages.user_input",
+                                                    "$$input",
+                                                ]
+                                            },
+                                            {
+                                                "$eq": [
+                                                    "$messages.message_timestamp",
+                                                    "$$ts",
+                                                ]
+                                            },
+                                        ]
+                                    }
+                                }
+                            },
+                            {"$project": {"_id": 0, "rating": "$messages.rating"}},
+                        ],
+                        "as": "matched_feedback",
+                    }
+                },
+                {
+                    "$project": {
+                        "_id": 0,
+                        "user_input": "$messages.user_input",
+                        "bot_response": "$messages.response",
+                        "emotions": "$messages.emotions",
+                        "timestamp": "$messages.timestamp",
+                        "rating": {
+                        "$ifNull": [
+                            {"$arrayElemAt": ["$matched_feedback.rating", 0]},
+                            None  # Fallback to None if no rating is found
+                        ]
+                    }
+                    }
+                },
+                {"$sort": {"timestamp": -1}},
+            ]
+        )
+    )
+    
+    emotions = list(
+        db.logs.aggregate(
+            [
+                {"$match": {"userid": user_id}},
+                {"$unwind": "$messages"},
+                {"$unwind": "$messages.emotions"},
+                {"$group": {"_id": "$messages.emotions", "count": {"$sum": 1}}},
+            ]
+        )
+    )
+
+    result = list(
+        db.logs.aggregate(
+            [
+                {"$match": {"userid": user_id}},
+                {"$project": {"count": {"$size": "$messages"}}},
+                {"$group": {"_id": None, "total": {"$sum": "$count"}}},
+            ]
+        )
+    )
+    total_sessions = result[0]["total"] if result else 0
+
+    sessions_rated = db.feedback.aggregate(
+        [
+            {"$match": {"userid": user_id}},
+            {"$unwind": "$messages"},
+            {"$match": {"messages.rating": {"$exists": True}}},
+            {"$count": "count"},
+        ]
+    )
+    sessions_rated = next(sessions_rated, {}).get("count", 0)
+
+    result = list(
+        db.feedback.aggregate(
+            [
+                {"$match": {"userid": user_id}},
+                {"$unwind": "$messages"},
+                {
+                    "$group": {
+                        "_id": None,
+                        "averageRating": {"$avg": "$messages.rating"},
+                    }
+                },
+            ]
+        )
+    )
+    average_rating = round(result[0]["averageRating"], 1) if result else None
+
+    # feedback = list(db.feedback.find({"userid": user_id}, {"_id":0}))
+    return jsonify(
+        {
+            "logs": logs,
+            "emotions": emotions,
+            "analytics": {
+                "total_sessions": total_sessions,
+                "sessions_rated": sessions_rated,
+                "average_rating": average_rating,
+            },
+        }
+    )
+
+
 @app.route("/history")
 @limiter.limit("20/minute")
 def get_history():
@@ -536,22 +682,25 @@ def get_history():
         user_id = session["user_id"]
 
         history = list(
-            db.logs.aggregate([
-                {"$match": {"userid": user_id}},
-                {"$unwind": "$messages"},
-                {"$match": {"messages.type": "text"}},
-                {"$sort": {"messages.timestamp": -1}},
-                {"$limit": 50},
-                {"$project": {
-                    "_id": 0,
-                    "user_input": "$messages.user_input",
-                    "response": "$messages.response",
-                    "timestamp": "$messages.timestamp",
-                    "emotions": "$messages.emotions"
-                }}
-            ])
+            db.logs.aggregate(
+                [
+                    {"$match": {"userid": user_id}},
+                    {"$unwind": "$messages"},
+                    {"$match": {"messages.type": "text"}},
+                    {"$sort": {"messages.timestamp": -1}},
+                    {"$limit": 50},
+                    {
+                        "$project": {
+                            "_id": 0,
+                            "user_input": "$messages.user_input",
+                            "response": "$messages.response",
+                            "timestamp": "$messages.timestamp",
+                            "emotions": "$messages.emotions",
+                        }
+                    },
+                ]
+            )
         )
-        print(f"History for user {user_id}: {history}")
 
         for entry in history:
             entry["timestamp"] = entry["timestamp"].isoformat()
@@ -575,23 +724,44 @@ def handle_feedback():
         data = request.get_json()
         validate(instance=data, schema=FEEDBACK_SCHEMA)
 
-        feedback_data = {
-            "userid": user_id,
+        feedback_message = {
             "rating": data["rating"],
             "user_input": data.get("user_input", "")[:200],
             "bot_response": data.get("bot_response", "")[:500],
             "timestamp": datetime.datetime.now(datetime.timezone.utc),
+            "message_timestamp": parse(data.get("message_timestamp"))
         }
 
-        db.feedback.update_one(
+        result = db.feedback.update_one(
             {
                 "userid": user_id,
-                "user_input": feedback_data["user_input"],
-                "bot_response": feedback_data["bot_response"],
+                "messages": {
+                    "$elemMatch": {
+                        "user_input": feedback_message.get("user_input", ""),
+                        "message_timestamp": feedback_message.get("message_timestamp"),
+                    }
+                },
             },
-            {"$set": feedback_data},
-            upsert=True,
+            {
+                "$set": {
+                    "messages.$.rating": feedback_message.get("rating"),
+                    "messages.$.timestamp": datetime.datetime.now(
+                        datetime.timezone.utc
+                    ),
+                }
+            },
         )
+
+        if result.matched_count == 0:
+            db.feedback.update_one(
+                {"userid": user_id},
+                {
+                    "$push": {"messages": feedback_message},
+                    "$setOnInsert": {"userid": user_id},
+                },
+                upsert=True,
+            )
+
         return jsonify({"status": "success"})
 
     except ValidationError as e:
