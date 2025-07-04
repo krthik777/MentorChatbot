@@ -470,7 +470,7 @@ def get_analytics():
             return jsonify({"error": "Unauthorized"}), 401
 
         user_id = session["user_id"]
-
+        user = db.auth.find_one({"_id": ObjectId(user_id)}, {"username": 1})
         engagement = list(
             db.logs.aggregate(
                 [
@@ -529,9 +529,10 @@ def get_analytics():
 
         return jsonify(
             {
-                "engagement": engagement,
-                "sentiment_distribution": sentiment,
-                "effectiveness": effectiveness[0] if effectiveness else {},
+            "engagement": engagement,
+            "sentiment_distribution": sentiment,
+            "effectiveness": effectiveness[0] if effectiveness else {},
+            "username": user.get("username", "User") if user else "User",
             }
         )
 
@@ -714,22 +715,22 @@ def get_history():
 
         history = list(
             db.logs.aggregate(
-                [
-                    {"$match": {"userid": user_id}},
-                    {"$unwind": "$messages"},
-                    {"$match": {"messages.type": "text"}},
-                    {"$sort": {"messages.timestamp": -1}},
-                    {"$limit": 50},
-                    {
-                        "$project": {
-                            "_id": 0,
-                            "user_input": "$messages.user_input",
-                            "response": "$messages.response",
-                            "timestamp": "$messages.timestamp",
-                            "emotions": "$messages.emotions",
-                        }
-                    },
-                ]
+            [
+                {"$match": {"userid": user_id}},
+                {"$unwind": "$messages"},
+                {"$match": {"messages.type": "text"}},
+                {"$sort": {"messages.timestamp": 1}},
+                {"$limit": 50},
+                {
+                "$project": {
+                    "_id": 0,
+                    "user_input": "$messages.user_input",
+                    "response": "$messages.response",
+                    "timestamp": "$messages.timestamp",
+                    "emotions": "$messages.emotions",
+                }
+                },
+            ]
             )
         )
 

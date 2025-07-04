@@ -55,6 +55,39 @@
       display: none;
     }
 
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+
+      50% {
+        transform: scale(1.2);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 0.7;
+      }
+    }
+
+    #recordingIndicator {
+      display: none;
+    }
+
+    .recording-active #micIcon {
+      color: red;
+    }
+
+    .recording-active #recordingIndicator {
+      display: block;
+    }
+
+    #messageInput {
+      margin-top: auto;
+    }
+
     @media (max-width: 1023px) {
       #sidebar {
         position: fixed;
@@ -89,9 +122,9 @@
       <!-- User Dropdown -->
       <div class="relative group">
         <button
-          class="flex items-center space-x-2 bg-white/10 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg focus:outline-none">
-          <span class="material-icons">psychology</span>
-          <span class="text-sm hidden sm:inline">Emotion-Aware Mentorship</span>
+          class="flex items-center space-x-2 bg-white/10 px-1 py-1.5 rounded-lg focus:outline-none">
+          <span class="material-icons">account_circle</span>
+          <span class="text-sm sm:inline" id="insertUsername">{{ username }}</span>
           <span class="material-icons text-base">expand_more</span>
         </button>
         <div
@@ -153,8 +186,11 @@
             <div class="flex items-center gap-2 sm:gap-3">
               <input id="messageInput" type="text" placeholder="Type your message..."
                 class="flex-1 px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base rounded-lg border focus:ring-2 focus:ring-indigo-500">
-              <button id="voiceButton" class="p-2 rounded-lg bg-white border hover:bg-gray-100">
-                <span class="material-icons text-indigo-600 text-xl">mic</span>
+              <button id="voiceButton" class="p-2 rounded-lg bg-white border hover:bg-gray-100 relative">
+                <span class="material-icons text-indigo-600 text-xl" id="micIcon">mic</span>
+                <div id="recordingIndicator"
+                  class="absolute inset-0 bg-indigo-500/50 rounded-lg animate-pulse opacity-0">
+                </div>
               </button>
               <button id="sendButton"
                 class="px-3 py-2 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
@@ -245,6 +281,8 @@
     const voiceButton = document.getElementById('voiceButton');
     const sidebar = document.getElementById('sidebar');
     const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const micIcon = document.getElementById('micIcon');
+    const recordingIndicator = document.getElementById('recordingIndicator');
     let recognition;
     let lastUserMessage = '';
 
@@ -257,6 +295,8 @@
       try {
         const { data } = await axios.get('/analytics');
         console.log('Analytics data:', data);
+        document.getElementById('insertUsername').textContent = data.username || 'User';
+
         engagementChart = new Chart(document.getElementById('engagementChart'), {
           type: 'line',
           data: {
@@ -467,6 +507,14 @@
         recognition.interimResults = false;
         recognition.lang = 'en-US';
 
+        recognition.onstart = () => {
+          voiceButton.classList.add('recording-active');
+        };
+
+        recognition.onend = () => {
+          voiceButton.classList.remove('recording-active');
+        };
+
         recognition.onresult = (e) => {
           const transcript = e.results[0][0].transcript;
           messageInput.value = transcript;
@@ -478,6 +526,10 @@
         voiceButton.style.display = 'none';
       }
     }
+
+    voiceButton.addEventListener('click', () => {
+      recognition?.start();
+    });
 
     document.querySelectorAll('a[href^="#"]').forEach(link => {
       link.addEventListener('click', e => {
