@@ -226,20 +226,20 @@
         <!-- Statistics Overview -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-number">1,247</div>
+                <div class="stat-number" id="totalUsers">N/A</div>
                 <div>Total Users</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">89</div>
-                <div>Active Users</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">5,432</div>
+                <div class="stat-number" id="totalMessages">N/A</div>
                 <div>Total Messages</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">98.5%</div>
-                <div>Response Rate</div>
+                <div class="stat-number" id="feedbackRate">N/A</div>
+                <div>Feedback Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalAverageRating">N/A</div>
+                <div>Average Rating</div>
             </div>
         </div>
 
@@ -250,22 +250,24 @@
                 <input type="text" class="search-box" placeholder="Search users...">
                 <div class="user-list" id="userList">
                     {% for u in users %}
-                    <div class="user-item" onclick="showUserAnalytics('{{ u._id }}','{{ u.username }}')">
+                    {% if u.username != 'admin' %}
+                    <div class="user-item" onclick="fetchUserAnalytics('{{ u._id }}','{{ u.username }}')">
                         <div class="user-info">
                             <h4>{{ u.username }}</h4>
                             <small>{{ u.email }}</small>
                         </div>
                     </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
 
             <!-- Analytics Section -->
             <div class="card">
-                <h3>User Analytics</h3>
+                <h3>User Analytics<span id="selectedUsername"></span></h3>
                 <div class="tabs">
                     <div class="tab active" onclick="showTab('overview', event)">Overview</div>
-                    <div class="tab" onclick="showTab('messages', event)">Messages</div>
+                    <div class="tab" onclick="showTab('messageslogs', event)">Messages</div>
                     <div class="tab" onclick="showTab('activity', event)">Activity</div>
                 </div>
 
@@ -281,13 +283,11 @@
                     </div>
                 </div>
 
-                <div id="analyticsLogs" class="message-log">
+                <div id="messageslogs" class="tab-content message-log">
                 </div>
 
                 <div id="activity" class="tab-content">
-                    <div class="chart-container">
-                        <p>Activity Heatmap (Chart.js integration needed)</p>
-                    </div>
+                    <canvas id="activityChart"></canvas>
                 </div>
             </div>
         </div>
@@ -311,6 +311,33 @@
     </div>
 
     <script>
+        let activityChart = null;
+        let sentimentChart = null;
+        let logsData = null;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const firstUserItem = document.querySelector('.user-item');
+            if (firstUserItem) {
+                firstUserItem.click();
+            }
+            
+            fetch('/admin/getAnalytics')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalUsers').innerText = data.totalUsers || 'N/A';
+                    document.getElementById('totalMessages').innerText = data.totalMessages || 'N/A';
+                    document.getElementById('feedbackRate').innerText = data.feedbackRate || 'N/A';
+                    document.getElementById('totalAverageRating').innerText = data.totalAverageRating || 'N/A';
+                })
+                .catch(error => {
+                    console.error('Error fetching analytics data:', error);
+                    document.getElementById('totalUsers').innerText = 'N/A';
+                    document.getElementById('totalMessages').innerText = 'N/A';
+                    document.getElementById('feedbackRate').innerText = 'N/A';
+                    document.getElementById('totalAverageRating').innerText = 'N/A';
+                });
+        });
+
         function selectUser(userId) {
             document.querySelectorAll('.user-item').forEach(item => {
                 item.classList.remove('active');
@@ -324,20 +351,6 @@
         function loadUserData(userId) {
             console.log('Loading data for user:', userId);
         }
-
-        function showTab(tabName, event) {
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            document.getElementById(tabName).classList.add('active');
-            if (event) event.target.classList.add('active');
-        }
-
 
         document.querySelector('.search-box').addEventListener('input', function (e) {
             const searchTerm = e.target.value.toLowerCase();
@@ -355,98 +368,190 @@
             });
         });
 
-        let sentimentChart = null;
 
-        function showUserAnalytics(userId, username) {
-            document.getElementById('analyticsTitle').innerText = `Analytics: ${username}`;
+        function fetchUserAnalytics(userId, username) {
+            document.querySelectorAll('.user-item').forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            document.getElementById('selectedUsername').innerText = `: ${username}`;
 
             fetch(`/admin/user/${userId}/analytics`)
                 .then(res => res.json())
                 .then(data => {
-                    document.getElementById('totalSessions').innerText = data.analytics.total_sessions;
-                    document.getElementById('totalSessionsRated').innerText = data.analytics.sessions_rated;
-                    const avgRating = data.analytics.average_rating?.toFixed(1) || "N/A";
-                    document.getElementById('averageRating').innerText = avgRating;
+                    activityChartData = data.activity;
+                    sentimentChartData = {
+                        totalSessions: data.analytics.total_sessions,
+                        totalSessionsRated: data.analytics.sessions_rated,
+                        avgRating: data.analytics.average_rating?.toFixed(1) || "N/A",
+                        emotions: data.emotions
+                    };
+                    logsData = data.logs;
 
-                    const emotions = data.emotions;
-                    const labels = [...new Set(emotions.map(d => d._id))];
-                    const colorPalette = [
-                        '#6366f1', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa',
-                        '#f472b6', '#facc15', '#38bdf8', '#4ade80', '#fb7185', '#f59e42',
-                        '#10b981', '#818cf8', '#e879f9', '#fde68a', '#6ee7b7', '#fca5a5',
-                        '#c084fc', '#a3e635'
-                    ];
+                    showTab('overview');
 
-                    const dataCounts = labels.map(label =>
-                        emotions.find(e => e._id === label)?.count || 0
-                    );
-
-                    if (sentimentChart) sentimentChart.destroy();
-
-                    sentimentChart = new Chart(document.getElementById('sentimentChart'), {
-                        type: 'doughnut',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                data: dataCounts,
-                                backgroundColor: labels.map((_, i) => colorPalette[i % colorPalette.length])
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'right'
-                                }
-                            }
-                        }
-                    });
-
-                    const logsContainer = document.getElementById('analyticsLogs');
-                    logsContainer.innerHTML = '';
-
-                    data.logs.forEach(log => {
-                        console.log(log);
-                        const messageItem = document.createElement('div');
-                        messageItem.classList.add('message-item');
-
-                        const messageUser = document.createElement('div');
-                        messageUser.classList.add('message-user');
-
-                        const messageHeader = document.createElement('div');
-                        messageHeader.classList.add('message-header');
-                        messageHeader.innerHTML = `
-                        <span>${log.user_input}</span>
-                        <span class="timestamp">${log.timestamp}</span>`;
-
-                        const messageBot = document.createElement('div');
-                        messageBot.classList.add('message-bot');
-                        messageBot.innerHTML = `
-                        <p>${log.bot_response}</p>`;
-
-                        messageUser.appendChild(messageHeader);
-                        messageUser.appendChild(messageBot);
-                        if (log.rating !== undefined && log.rating !== null) {
-                            const ratingStars = document.createElement('div');
-                            ratingStars.className = 'flex space-x-1 mt-2';
-
-                            for (let i = 1; i <= 5; i++) {
-                                const star = document.createElement('span');
-                                star.className = 'material-icons';
-                                star.style.color = '#facc15';
-                                star.textContent = 'star';
-                                ratingStars.appendChild(star);
-                            }
-
-                            messageBot.appendChild(ratingStars);
-                        }
-                        messageItem.appendChild(messageUser);
-
-                        logsContainer.appendChild(messageItem);
-                    });
+                    document.getElementById('totalSessions').innerText = sentimentChartData.totalSessions;
+                    document.getElementById('totalSessionsRated').innerText = sentimentChartData.totalSessionsRated;
+                    document.getElementById('averageRating').innerText = sentimentChartData.avgRating;
+                    renderSentimentChart(sentimentChartData);
                 });
         }
+
+        function renderSentimentChart(data) {
+            const emotions = data.emotions;
+            const labels = [...new Set(emotions.map(d => d._id))];
+            const colorPalette = [
+                '#6366f1', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa',
+                '#f472b6', '#facc15', '#38bdf8', '#4ade80', '#fb7185', '#f59e42',
+                '#10b981', '#818cf8', '#e879f9', '#fde68a', '#6ee7b7', '#fca5a5',
+                '#c084fc', '#a3e635'
+            ];
+
+            const dataCounts = labels.map(label =>
+                emotions.find(e => e._id === label)?.count || 0
+            );
+
+            if (sentimentChart) sentimentChart.destroy();
+            sentimentChart = new Chart(document.getElementById('sentimentChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataCounts,
+                        backgroundColor: labels.map((_, i) => colorPalette[i % colorPalette.length])
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderActivityChart(data) {
+            if (!data) return;
+
+            const weekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const dayCounts = {
+                'Sun': 0, 'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0
+            };
+
+            data.forEach(entry => {
+                const date = new Date(entry._id);
+                const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+                dayCounts[weekday] += entry.count;
+            });
+
+            const weekData = weekLabels.map(day => dayCounts[day] || 0);
+
+            if (activityChart) activityChart.destroy();
+            activityChart = new Chart(document.getElementById('activityChart'), {
+                type: 'bar',
+                data: {
+                    labels: weekLabels,
+                    datasets: [{
+                        label: 'Messages per Day',
+                        data: weekData,
+                        backgroundColor: '#4caf50'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Messages' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Day of Week' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderChatLogs(data) {
+            const logsContainer = document.getElementById('messageslogs');
+            logsContainer.innerHTML = '';
+
+            if (data && data.length > 0) {
+                data.forEach(log => {
+                    const messageItem = document.createElement('div');
+                    messageItem.classList.add('message-item');
+
+                    const messageUser = document.createElement('div');
+                    messageUser.classList.add('message-user');
+
+                    const messageHeader = document.createElement('div');
+                    messageHeader.classList.add('message-header');
+                    messageHeader.innerHTML = `
+                    <span>${log.user_input}</span>
+                    <span class="timestamp">${log.timestamp}</span>`;
+
+                    const messageBot = document.createElement('div');
+                    messageBot.classList.add('message-bot');
+                    messageBot.innerHTML = `<p>${log.bot_response}</p>`;
+
+                    messageUser.appendChild(messageHeader);
+                    messageUser.appendChild(messageBot);
+
+                    if (log.rating !== undefined && log.rating !== null) {
+                        const ratingStars = document.createElement('div');
+                        ratingStars.className = 'flex space-x-1 mt-2';
+                        for (let i = 1; i <= log.rating; i++) {
+                            const star = document.createElement('span');
+                            star.className = 'material-icons';
+                            star.style.color = '#facc15';
+                            star.textContent = 'star';
+                            ratingStars.appendChild(star);
+                        }
+                        messageBot.appendChild(ratingStars);
+                    }
+
+                    messageItem.appendChild(messageUser);
+                    logsContainer.appendChild(messageItem);
+                });
+            }
+        }
+
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+
+                const tabText = tab.textContent.trim().toLowerCase();
+
+                if (
+                    (tabName === 'overview' && tabText === 'overview') ||
+                    (tabName === 'messageslogs' && tabText === 'messages') ||
+                    (tabName === 'activity' && tabText === 'activity')
+                ) {
+                    tab.classList.add('active');
+                }
+            });
+
+            document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'overview') {
+                renderSentimentChart(sentimentChartData);
+            } else if (tabName === 'messageslogs') {
+                renderChatLogs(logsData);
+            } else if (tabName === 'activity') {
+                renderActivityChart(activityChartData);
+            }
+        }
+
     </script>
 </body>
 

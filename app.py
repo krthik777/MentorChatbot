@@ -541,7 +541,7 @@ def get_analytics():
 
 
 @app.route("/admin/user/<user_id>/analytics")
-@limiter.limit("10/minute")
+@limiter.limit("100/minute")
 def user_analytics(user_id):
     if "user_id" not in session:
         return jsonify({"error": "Unauthorized"}), 401
@@ -598,18 +598,18 @@ def user_analytics(user_id):
                         "emotions": "$messages.emotions",
                         "timestamp": "$messages.timestamp",
                         "rating": {
-                        "$ifNull": [
-                            {"$arrayElemAt": ["$matched_feedback.rating", 0]},
-                            None  # Fallback to None if no rating is found
-                        ]
-                    }
+                            "$ifNull": [
+                                {"$arrayElemAt": ["$matched_feedback.rating", 0]},
+                                None,  # Fallback to None if no rating is found
+                            ]
+                        },
                     }
                 },
-                {"$sort": {"timestamp": -1}},
+                {"$sort": {"timestamp": 1}},
             ]
         )
     )
-    
+
     emotions = list(
         db.logs.aggregate(
             [
@@ -659,6 +659,36 @@ def user_analytics(user_id):
     average_rating = round(result[0]["averageRating"], 1) if result else None
 
     # feedback = list(db.feedback.find({"userid": user_id}, {"_id":0}))
+
+    activity = list(
+        db.logs.aggregate(
+            [
+                {"$match": {"userid": user_id}},
+                {"$unwind": "$messages"},
+                {
+                    "$match": {
+                        "messages.timestamp": {
+                            "$gte": datetime.datetime.now(datetime.timezone.utc)
+                            - datetime.timedelta(days=30)
+                        }
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": {
+                            "$dateToString": {
+                                "format": "%Y-%m-%d",
+                                "date": "$messages.timestamp",
+                            }
+                        },
+                        "count": {"$sum": 1},
+                    }
+                },
+                {"$sort": {"_id": 1}},
+            ]
+        )
+    )
+    
     return jsonify(
         {
             "logs": logs,
@@ -668,6 +698,7 @@ def user_analytics(user_id):
                 "sessions_rated": sessions_rated,
                 "average_rating": average_rating,
             },
+            "activity": activity,
         }
     )
 
@@ -729,7 +760,7 @@ def handle_feedback():
             "user_input": data.get("user_input", "")[:200],
             "bot_response": data.get("bot_response", "")[:500],
             "timestamp": datetime.datetime.now(datetime.timezone.utc),
-            "message_timestamp": parse(data.get("message_timestamp"))
+            "message_timestamp": parse(data.get("message_timestamp")),
         }
 
         result = db.feedback.update_one(
@@ -771,6 +802,48 @@ def handle_feedback():
         logger.error(f"Feedback error: {str(e)}")
         return jsonify({"error": "Failed to store feedback"}), 500
 
+@app.route("/admin/getAnalytics")
+@limiter.limit("10/minute")
+def admin_get_analytics():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    admin_id = session["user_id"]
+    admin_user = db.auth.find_one({"_id": ObjectId(admin_id), "username": "admin"})
+    if not admin_user:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    total_users = db.auth.count_documents({}) - 1
+    total_messages = db.logs.aggregate([
+        {"$unwind": "$messages"},
+        {"$group": {"_id": None, "count": {"$sum": 1}}},
+    ])
+    total_messages = next(total_messages, {}).get("count", 0)
+
+    feedback_count = db.feedback.aggregate([
+        {"$unwind": "$messages"},
+        {"$match": {"messages.rating": {"$exists": True}}},
+        {"$group": {"_id": None, "count": {"$sum": 1}}},
+    ])
+    feedback_count = next(feedback_count, {}).get("count", 0)
+
+    feedback_rate = (
+        round((feedback_count / total_messages) * 100, 1) if total_messages else 0
+    )
+
+    avg_rating_cursor = db.feedback.aggregate([
+        {"$unwind": "$messages"},
+        {"$match": {"messages.rating": {"$exists": True}}},
+        {"$group": {"_id": None, "average": {"$avg": "$messages.rating"}}},
+    ])
+    avg_rating = next(avg_rating_cursor, {}).get("average", None)
+    avg_rating = round(avg_rating, 2) if avg_rating is not None else None
+
+    return jsonify({
+        "totalUsers": total_users,
+        "totalMessages": total_messages,
+        "feedbackRate": f"{feedback_rate}%" if total_messages else "N/A",
+        "totalAverageRating": avg_rating,
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, threaded=True)

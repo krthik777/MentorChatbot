@@ -341,7 +341,6 @@
     }
 
     function addMessage(text, isUser = false, emotions = [], userInput = '', botTimestamp) {
-      console.log('📨 Initial bot timestamp:', botTimestamp);
       const messageDiv = document.createElement('div');
       messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} message-enter`;
 
@@ -433,8 +432,8 @@
       try {
         const { data } = await axios.post('/chat', { message: msg });
         const r = data.structured_response;
-        console.log('Response:', r);
-        console.log(typeof r)
+        // console.log('Response:', r);
+        // console.log(typeof r)
         const suggestionsHTML = r["Practical Suggestions"]
           .map(s => `• ${s}<br>`)
           .join("");
