@@ -413,12 +413,12 @@ def handle_chat():
             )
             response_text += "\n\n📝 I've saved this in your CBT journal."
 
-        # Generate speech
-        tts = gTTS(response_text, lang="en")
-        audio_io = io.BytesIO()
-        tts.write_to_fp(audio_io)
-        audio_io.seek(0)
-        audio_base64 = base64.b64encode(audio_io.read()).decode("utf-8")
+        # # Generate speech
+        # tts = gTTS(response_text, lang="en")
+        # audio_io = io.BytesIO()
+        # tts.write_to_fp(audio_io)
+        # audio_io.seek(0)
+        # audio_base64 = base64.b64encode(audio_io.read()).decode("utf-8")
 
         message_doc = {
             "user_input": message,
@@ -435,7 +435,7 @@ def handle_chat():
         return jsonify(
             {
                 "structured_response": structured_response,
-                "audio_response": audio_base64,
+                # "audio_response": audio_base64,
                 "sentiment": [e["label"] for e in emotions],
                 "timestamp": message_doc["timestamp"].isoformat(),
             }
