@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - MentorChatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
@@ -274,10 +275,27 @@
 </head>
 
 <body>
-    <div class="header">
-        <h1>Admin Dashboard</h1>
-        <p>MentorChatbot Management System</p>
+    <div class="header flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+            <p>MentorChatbot Management System</p>
+        </div>
+        <div class="relative group">
+            <button class="flex items-center space-x-2 bg-white/10 px-1 py-1.5 rounded-lg focus:outline-none">
+                <span class="material-icons">account_circle</span>
+                <span class="text-sm sm:inline">Admin</span>
+                <span class="material-icons text-base">expand_more</span>
+            </button>
+            <div
+                class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity">
+                <a href="/logout" class="block px-4 py-2 text-gray-700 hover:bg-indigo-50 flex items-center">
+                    <span class="material-icons mr-2 text-base">logout</span>
+                    Logout
+                </a>
+            </div>
+        </div>
     </div>
+
 
     <div class="container">
         <!-- Statistics Overview -->
