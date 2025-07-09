@@ -175,31 +175,11 @@ MentorChatbot/
 │
 ├── app.py                # Core Flask server with all route logic
 ├── templates/            # HTML templates for UI
-├── static/               # CSS, JS, and frontend assets
 ├── requirements.txt
 ├── .env.example
 ├── LICENSE
 └── README.md             # ← You are here!
 ```
-
----
-
-## 🚀 Future Roadmap
-
-* 🎧 **Complete audio input/output** with Whisper + gTTS
-* 📱 **Mobilefriendly & SPA UI** using React or Vue
-* 🔖 **Goal tracking** with reminders and progress logs
-* 📚 **CBT/DBT modules** for guided sessions
-* 🧩 **Integrate third-party APIs**: journaling tools, wellness trackers
-
----
-
-## 👌 Contributing
-
-1. Fork this repository
-2. Make your changes in a feature branch
-3. Ensure tests pass and new code is covered
-4. Submit a Pull Request with detailed description
 
 ---
 
