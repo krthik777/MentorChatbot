@@ -1,0 +1,13 @@
+Flask
+Flask-Limiter
+Flask-Cors
+python-dotenv
+pymongo
+google-generativeai
+gTTS
+jsonschema
+transformers
+torch
+huggingface_hub
+bcrypt
+python-dateutil
