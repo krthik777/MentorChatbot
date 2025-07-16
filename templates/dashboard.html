@@ -1,3 +1,5 @@
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -8,14 +10,94 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    @keyframes pulse {
+    :root {
+      --primary-color: #6366f1;
+      /* indigo-600 */
+      --secondary-color: #818cf8;
+      /* indigo-400 */
+      --accent-color: #a78bfa;
+      /* violet-400 */
+      --text-color-dark: #1f2937;
+      /* gray-800 */
+      --text-color-light: #4b5563;
+      /* gray-600 */
+      --bg-light: #f9fafb;
+      /* gray-50 */
+      --bg-card: #ffffff;
+      --border-color: #e5e7eb;
+      /* gray-200 */
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-color-dark);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-light);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--primary-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--secondary-color);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInLeft {
+      from {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes pulseActive {
       0% {
         box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
       }
 
       70% {
-        box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
+        box-shadow: 0 0 0 16px rgba(99, 102, 241, 0);
       }
 
       100% {
@@ -24,45 +106,37 @@
     }
 
     .pulse-active {
-      animation: pulse 1.5s infinite;
+      animation: pulseActive 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
     }
 
     .message-enter {
-      animation: slideIn 0.3s ease-out;
+      animation: fadeIn 0.4s ease-out forwards;
     }
 
-    @keyframes slideIn {
-      from {
-        transform: translateY(20px);
-        opacity: 0;
-      }
 
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-
+    /* Dashboard Sections */
     .dashboard-section {
       display: none;
+      animation: fadeIn 0.5s ease-out forwards;
     }
 
     .dashboard-section.active {
       display: block;
     }
 
+    /* Sidebar specific styles */
     .sidebar-backdrop {
       display: none;
     }
 
-    @keyframes pulse {
+    @keyframes micPulse {
       0% {
         transform: scale(1);
         opacity: 0.7;
       }
 
       50% {
-        transform: scale(1.2);
+        transform: scale(1.1);
         opacity: 1;
       }
 
@@ -74,20 +148,19 @@
 
     #recordingIndicator {
       display: none;
+      animation: micPulse 1.5s infinite ease-in-out;
     }
 
     .recording-active #micIcon {
-      color: red;
+      color: var(--primary-color);
+      /* Use primary color for active mic */
     }
 
     .recording-active #recordingIndicator {
       display: block;
     }
 
-    #messageInput {
-      margin-top: auto;
-    }
-
+    /* Responsive Sidebar */
     @media (max-width: 1023px) {
       #sidebar {
         position: fixed;
@@ -95,7 +168,10 @@
         left: -100%;
         z-index: 50;
         height: 100vh;
-        transition: left 0.3s;
+        transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        /* Smooth slide */
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        /* Add shadow for depth */
       }
 
       #sidebar.active {
@@ -109,28 +185,28 @@
   </style>
 </head>
 
-<body class="bg-gray-50 font-sans h-screen flex flex-col overflow-hidden">
-  <!-- Header -->
-  <header class="bg-indigo-600 text-white py-4 px-4 sm:px-6 flex items-center justify-between shadow-lg">
+<body class="h-screen flex flex-col overflow-hidden">
+  <header
+    class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3 px-4 sm:px-6 flex items-center justify-between shadow-lg z-10">
     <div class="flex items-center space-x-3">
-      <button id="sidebarToggle" class="lg:hidden">
-        <span class="material-icons text-2xl">menu</span>
+      <button id="sidebarToggle" class="lg:hidden p-2 rounded-md hover:bg-indigo-500 transition-colors">
+        <span class="material-icons text-3xl">menu</span>
       </button>
-      <h1 class="text-xl font-bold">MentorAI</h1>
+      <h1 class="text-2xl font-bold tracking-wide">MentorAI</h1>
     </div>
-    <div class="flex items-center space-x-2 sm:space-x-4">
-      <!-- User Dropdown -->
+    <div class="flex items-center space-x-3 sm:space-x-5">
       <div class="relative group">
         <button
-          class="flex items-center space-x-2 bg-white/10 px-1 py-1.5 rounded-lg focus:outline-none">
-          <span class="material-icons">account_circle</span>
-          <span class="text-sm sm:inline" id="insertUsername">{{ username }}</span>
-          <span class="material-icons text-base">expand_more</span>
+          class="flex items-center space-x-2 bg-white/20 px-3 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white/50 transition-all hover:bg-white/30">
+          <span class="material-icons text-3xl">account_circle</span>
+          <span class="text-base font-medium hidden sm:inline" id="insertUsername">{{ username }}</span>
+          <span class="material-icons text-xl hidden sm:inline">expand_more</span>
         </button>
         <div
-          class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity">
-          <a href="/logout" class="block px-4 py-2 text-gray-700 hover:bg-indigo-50 flex items-center">
-            <span class="material-icons mr-2 text-base">logout</span>
+          class="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-all duration-300 transform scale-95 group-hover:scale-100 origin-top-right">
+          <a href="/logout"
+            class="block px-5 py-3 text-gray-700 hover:bg-indigo-50 flex items-center rounded-xl transition-colors">
+            <span class="material-icons mr-3 text-xl">logout</span>
             Logout
           </a>
         </div>
@@ -139,134 +215,164 @@
   </header>
 
   <div class="flex flex-1 overflow-hidden relative">
-    <!-- Sidebar Backdrop -->
-    <div class="sidebar-backdrop fixed inset-0 z-40 bg-black/50 lg:hidden" id="sidebarBackdrop"></div>
+    <div class="sidebar-backdrop fixed inset-0 z-40 bg-black/40 lg:hidden" id="sidebarBackdrop"></div>
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="bg-white w-64 shadow-xl fixed lg:static lg:transform-none z-50">
-      <nav class="p-3 sm:p-4 space-y-1 sm:space-y-2">
-        <a href="#chat" class="flex items-center p-2 sm:p-3 rounded-lg bg-indigo-50 text-indigo-700">
-          <span class="material-icons mr-2 sm:mr-3">forum</span>
+    <aside id="sidebar" class="bg-white w-64 shadow-2xl fixed lg:static lg:transform-none z-50 pt-5">
+      <nav class="p-3 sm:p-4 space-y-2 sm:space-y-3">
+        <a href="#chat"
+          class="flex items-center p-3 sm:p-4 rounded-xl text-indigo-700 font-medium bg-indigo-50 transition-all duration-200 hover:bg-indigo-100 hover:text-indigo-800">
+          <span class="material-icons mr-3 text-2xl">forum</span>
           Chat Interface
         </a>
-        <a href="#analytics" class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-100">
-          <span class="material-icons mr-2 sm:mr-3">analytics</span>
+        <a href="#analytics"
+          class="flex items-center p-3 sm:p-4 rounded-xl text-gray-700 font-medium hover:bg-gray-100 transition-all duration-200">
+          <span class="material-icons mr-3 text-2xl">analytics</span>
           Analytics Dashboard
         </a>
-        <a href="#history" class="flex items-center p-2 sm:p-3 rounded-lg hover:bg-gray-100">
-          <span class="material-icons mr-2 sm:mr-3">history</span>
+        <a href="#history"
+          class="flex items-center p-3 sm:p-4 rounded-xl text-gray-700 font-medium hover:bg-gray-100 transition-all duration-200">
+          <span class="material-icons mr-3 text-2xl">history</span>
           Session History
         </a>
       </nav>
     </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 overflow-auto p-4 sm:p-6">
-      <!-- Chat Section -->
+    <main class="flex-1 overflow-auto p-4 sm:p-6 bg-gray-50">
       <div id="chatSection" class="dashboard-section active">
-        <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-sm">
-          <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold">AI Mentorship Chat</h2>
+        <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg flex flex-col h-[calc(100vh-160px)]">
+          <div class="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50 rounded-t-2xl">
+            <h2 class="text-xl font-semibold text-gray-800">AI Mentorship Chat <span
+                class="material-icons text-indigo-500 align-middle ml-1">chat</span></h2>
           </div>
 
-          <div id="chatContainer" class="h-80 sm:h-96 overflow-y-auto p-4 space-y-4">
-            <div class="flex justify-start">
-              <div class="bg-gray-100 p-3 sm:p-4 rounded-xl max-w-[85%] sm:max-w-[80%]">
-                <p class="text-sm sm:text-base">Hello! I'm Ava your AI mentor here to provide guidance and
-                  support. Feel free to share your thoughts or questions.</p>
-                <div class="mt-2 text-xs text-gray-500 flex items-center">
-                  <span class="material-icons text-sm mr-1">engineering</span>
-                  24/7 Support • Emotion Detection • CBT Techniques
+          <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
+            <div class="flex justify-start animate-fadeIn">
+              <div
+                class="bg-gradient-to-br from-gray-100 to-gray-50 p-4 rounded-b-xl rounded-tr-xl max-w-[85%] sm:max-w-[75%] shadow-md">
+                <p class="text-sm sm:text-base text-gray-700 leading-relaxed">Hello! I'm Ava your AI mentor here to
+                  provide guidance and support. Feel free to share your thoughts or questions. 😊</p>
+                <div class="mt-3 text-xs text-gray-500 flex items-center flex-wrap gap-x-3">
+                  <span class="flex items-center"><span class="material-icons text-sm mr-1">schedule</span> 24/7
+                    Support</span>
+                  <span class="flex items-center"><span class="material-icons text-sm mr-1">psychology</span> Emotion
+                    Detection</span>
+                  <span class="flex items-center"><span class="material-icons text-sm mr-1">lightbulb</span> CBT
+                    Techniques</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
-            <div class="flex items-center gap-2 sm:gap-3">
-              <input id="messageInput" type="text" placeholder="Type your message..."
-                class="flex-1 px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base rounded-lg border focus:ring-2 focus:ring-indigo-500">
-              <button id="voiceButton" class="p-2 rounded-lg bg-white border hover:bg-gray-100 relative">
-                <span class="material-icons text-indigo-600 text-xl" id="micIcon">mic</span>
-                <div id="recordingIndicator"
-                  class="absolute inset-0 bg-indigo-500/50 rounded-lg animate-pulse opacity-0">
-                </div>
+          <div class="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+            <div class="flex items-center gap-3 sm:gap-4">
+              <input id="messageInput" type="text" placeholder="Type your message or use voice..."
+                class="flex-1 px-4 py-2.5 text-base rounded-full border border-gray-300 focus:ring-3 focus:ring-indigo-300 focus:border-indigo-500 transition-all shadow-sm">
+              <button id="voiceButton"
+                class="p-3 rounded-full bg-white border border-gray-200 hover:bg-gray-100 relative group transition-all duration-200 flex items-center justify-center">
+                <span class="material-icons text-indigo-600 text-2xl" id="micIcon">mic</span>
+                <span id="recordingIndicator"
+                  class="absolute inset-0 bg-indigo-500/50 rounded-full opacity-0 pointer-events-none"></span>
+                <span
+                  class="absolute bottom-full mb-2 hidden group-hover:block px-3 py-1 bg-gray-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">Voice
+                  Input</span>
               </button>
               <button id="sendButton"
-                class="px-3 py-2 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                <span class="material-icons text-xl">send</span>
+                class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-full hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-3 focus:ring-indigo-300 transition-all duration-200 flex items-center justify-center gap-1 shadow-md">
+                <span class="material-icons text-2xl">send</span>
+                <span class="hidden sm:inline">Send</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Analytics Dashboard -->
       <div id="analyticsSection" class="dashboard-section">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-            <h3 class="text-lg font-semibold mb-4">Engagement Trends</h3>
-            <div class="h-64 sm:h-72">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          <div class="lg:col-span-2 bg-white p-5 sm:p-7 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-semibold mb-5 text-gray-800 flex items-center">
+              <span class="material-icons mr-2 text-indigo-500">trending_up</span> Engagement Trends
+            </h3>
+            <div class="h-72 sm:h-80">
               <canvas id="engagementChart"></canvas>
             </div>
           </div>
 
-          <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-            <h3 class="text-lg font-semibold mb-4">Emotional Distribution</h3>
-            <div class="h-64 sm:h-72">
+          <div class="bg-white p-5 sm:p-7 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-semibold mb-5 text-gray-800 flex items-center">
+              <span class="material-icons mr-2 text-indigo-500">mood</span> Emotional Distribution
+            </h3>
+            <div class="h-72 sm:h-80 flex items-center justify-center">
               <canvas id="sentimentChart"></canvas>
             </div>
           </div>
 
-          <div class="md:col-span-2 bg-white p-4 sm:p-6 rounded-xl shadow-sm">
-            <h3 class="text-lg font-semibold mb-4">Performance Metrics</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div class="bg-indigo-50 p-4 sm:p-6 rounded-lg">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <p class="text-sm text-gray-600">Average Rating</p>
-                    <p class="text-2xl sm:text-3xl font-bold text-indigo-600" id="avgRating">4.8</p>
-                  </div>
+          <div class="lg:col-span-3 bg-white p-5 sm:p-7 rounded-2xl shadow-lg">
+            <h3 class="text-xl font-semibold mb-5 text-gray-800 flex items-center">
+              <span class="material-icons mr-2 text-indigo-500">insights</span> Performance Metrics
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div class="bg-indigo-50 p-5 sm:p-6 rounded-xl flex flex-col justify-between h-32 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                  <p class="text-sm text-gray-600 font-medium">Average Rating</p>
                   <span class="material-icons text-indigo-600 text-3xl sm:text-4xl">star_rate</span>
                 </div>
+                <p class="text-3xl sm:text-4xl font-extrabold text-indigo-700" id="avgRating">4.8</p>
               </div>
-              <div class="bg-white border p-4 sm:p-6 rounded-lg">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <p class="text-sm text-gray-600">Total Sessions</p>
-                    <p class="text-2xl sm:text-3xl font-bold text-gray-800" id="totalSessions">1,234
-                    </p>
-                  </div>
+              <div class="bg-white border border-gray-200 p-5 sm:p-6 rounded-xl flex flex-col justify-between h-32 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                  <p class="text-sm text-gray-600 font-medium">Total Sessions</p>
                   <span class="material-icons text-gray-600 text-3xl sm:text-4xl">forum</span>
                 </div>
+                <p class="text-3xl sm:text-4xl font-extrabold text-gray-800" id="totalSessions">1,234</p>
+              </div>
+              <div class="bg-white border border-gray-200 p-5 sm:p-6 rounded-xl flex flex-col justify-between h-32 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                  <p class="text-sm text-gray-600 font-medium">Messages Sent</p>
+                  <span class="material-icons text-gray-600 text-3xl sm:text-4xl">message</span>
+                </div>
+                <p class="text-3xl sm:text-4xl font-extrabold text-gray-800" id="messagesSent">5,678</p>
+              </div>
+              <div class="bg-white border border-gray-200 p-5 sm:p-6 rounded-xl flex flex-col justify-between h-32 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                  <p class="text-sm text-gray-600 font-medium">Time Spent (min)</p>
+                  <span class="material-icons text-gray-600 text-3xl sm:text-4xl">timer</span>
+                </div>
+                <p class="text-3xl sm:text-4xl font-extrabold text-gray-800" id="timeSpent">2,456</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Session History -->
       <div id="historySection" class="dashboard-section">
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div class="p-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold">Recent Mentorship Sessions</h2>
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div class="p-5 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50 rounded-t-2xl flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-gray-800 flex items-center">
+              <span class="material-icons mr-2 text-indigo-500">history</span> Recent Mentorship Sessions
+            </h2>
+            <!-- <button class="text-indigo-600 hover:text-indigo-800 flex items-center text-sm font-medium">
+                View All <span class="material-icons text-base ml-1">arrow_forward</span>
+            </button> -->
           </div>
-          <div class="overflow-x-auto max-h-[500px] sm:max-h-[600px]">
-            <table class="w-full">
-              <thead class="bg-gray-50">
+          <div class="overflow-x-auto max-h-[calc(100vh-250px)] custom-scrollbar">
+            <table class="w-full text-left table-auto">
+              <thead class="bg-gray-50 sticky top-0 border-b border-gray-200 z-10">
                 <tr>
-                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                  <th class="px-5 py-3 text-xs sm:text-sm font-medium text-gray-700 uppercase tracking-wider">
                     Time</th>
-                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                  <th class="px-5 py-3 text-xs sm:text-sm font-medium text-gray-700 uppercase tracking-wider">
                     User Input</th>
-                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                  <th class="px-5 py-3 text-xs sm:text-sm font-medium text-gray-700 uppercase tracking-wider">
                     AI Response</th>
-                  <th class="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700">
+                  <th class="px-5 py-3 text-xs sm:text-sm font-medium text-gray-700 uppercase tracking-wider">
                     Emotions</th>
                 </tr>
               </thead>
-              <tbody id="historyContainer" class="divide-y divide-gray-200 text-xs sm:text-sm"></tbody>
+              <tbody id="historyContainer" class="divide-y divide-gray-100 text-sm"></tbody>
             </table>
+            <div id="noHistoryMessage" class="hidden text-center text-gray-500 p-8">
+                No session history available yet. Start chatting to see your sessions here!
+            </div>
           </div>
         </div>
       </div>
@@ -293,10 +399,13 @@
 
     async function initializeAnalytics() {
       try {
-        const { data } = await axios.get('/analytics');
+        const {
+          data
+        } = await axios.get('/analytics');
         console.log('Analytics data:', data);
         document.getElementById('insertUsername').textContent = data.username || 'User';
 
+        if (engagementChart) engagementChart.destroy();
         engagementChart = new Chart(document.getElementById('engagementChart'), {
           type: 'line',
           data: {
@@ -304,36 +413,60 @@
             datasets: [{
               label: 'Daily Interactions',
               data: data.engagement.map(d => d.count),
-              borderColor: '#6366f1',
-              backgroundColor: 'rgba(99, 102, 241, 0.05)',
-              tension: 0.3
+              borderColor: 'var(--primary-color)',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              tension: 0.4,
+              fill: true,
+              pointBackgroundColor: 'var(--primary-color)',
+              pointBorderColor: '#fff',
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: 'var(--secondary-color)',
             }]
           },
-          options: { responsive: true, maintainAspectRatio: false }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: function(context) {
+                    return `Interactions: ${context.parsed.y}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  display: false
+                }
+              },
+              y: {
+                beginAtZero: true,
+                grid: {
+                  color: 'var(--border-color)'
+                },
+                ticks: {
+                  precision: 0
+                }
+              }
+            }
+          }
         });
 
+        if (sentimentChart) sentimentChart.destroy();
         const uniqueLabels = [...new Set(data.sentiment_distribution.map(d => d._id))];
         const colorPalette = [
-          '#6366f1', // Indigo
-          '#60a5fa', // Blue
-          '#34d399', // Green
-          '#fbbf24', // Yellow
-          '#f87171', // Red
-          '#a78bfa', // Purple
-          '#f472b6', // Pink
-          '#facc15', // Amber
-          '#38bdf8', // Sky
-          '#4ade80', // Emerald
-          '#fb7185', // Rose
-          '#f59e42', // Orange
-          '#10b981', // Teal
-          '#818cf8', // Violet
-          '#e879f9', // Fuchsia
-          '#fde68a', // Light Yellow
-          '#6ee7b7', // Mint
-          '#fca5a5', // Light Red
-          '#c084fc', // Light Purple
-          '#a3e635'  // Lime
+          '#6366f1', '#60a5fa', '#34d399', '#fbbf24', '#f87171',
+          '#a78bfa', '#f472b6', '#facc15', '#38bdf8', '#4ade80',
+          '#fb7185', '#f59e42', '#10b981', '#818cf8', '#e879f9',
+          '#fde68a', '#6ee7b7', '#fca5a5', '#c084fc', '#a3e635'
         ];
         sentimentChart = new Chart(document.getElementById('sentimentChart'), {
           type: 'doughnut',
@@ -341,10 +474,37 @@
             labels: uniqueLabels,
             datasets: [{
               data: data.sentiment_distribution.map(d => d.count),
-              backgroundColor: uniqueLabels.map((_, i) => colorPalette[i % colorPalette.length])
+              backgroundColor: uniqueLabels.map((_, i) => colorPalette[i % colorPalette.length]),
+              hoverOffset: 8
             }]
           },
-          options: { responsive: true, maintainAspectRatio: false }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  boxWidth: 12,
+                  padding: 15
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    let label = context.label || '';
+                    if (label) {
+                      label += ': ';
+                    }
+                    if (context.parsed) {
+                      label += context.parsed;
+                    }
+                    return label;
+                  }
+                }
+              }
+            }
+          }
         });
 
         const avgRating = data.effectiveness.averageRating;
@@ -355,28 +515,53 @@
         document.getElementById('totalSessions').textContent =
           totalSessions !== undefined && totalSessions !== null ? totalSessions.toLocaleString() : '0';
 
+        // Assuming you have these metrics in your analytics data
+        const messagesSent = data.effectiveness.messagesSent || 0;
+        document.getElementById('messagesSent').textContent = messagesSent.toLocaleString();
+
+        const totalDuration = data.effectiveness.totalDurationMinutes || 0; // Assuming duration in minutes
+        document.getElementById('timeSpent').textContent = totalDuration.toLocaleString();
+
+
       } catch (error) {
         console.error('Analytics error:', error);
+        // Fallback or error display for analytics
+        document.getElementById('avgRating').textContent = 'N/A';
+        document.getElementById('totalSessions').textContent = '0';
+        document.getElementById('messagesSent').textContent = '0';
+        document.getElementById('timeSpent').textContent = '0';
       }
     }
 
     async function loadHistory() {
       try {
-        const { data } = await axios.get('/history');
+        const {
+          data
+        } = await axios.get('/history');
         const table = document.getElementById('historyContainer');
         table.innerHTML = '';
+        if (data.length === 0) {
+            document.getElementById('noHistoryMessage').classList.remove('hidden');
+            return;
+        } else {
+            document.getElementById('noHistoryMessage').classList.add('hidden');
+        }
+
         data.forEach(entry => {
           const row = document.createElement('tr');
+          row.className = 'hover:bg-gray-50 transition-colors';
           row.innerHTML = `
-            <td class="px-3 py-2 sm:px-4">${new Date(entry.timestamp).toLocaleString()}</td>
-            <td class="px-3 py-2 sm:px-4">${entry.user_input}</td>
-            <td class="px-3 py-2 sm:px-4">${entry.response}</td>
-            <td class="px-3 py-2 sm:px-4">${entry.emotions.join(', ')}</td>
+            <td class="px-5 py-3 whitespace-nowrap text-gray-700">${new Date(entry.timestamp).toLocaleString()}</td>
+            <td class="px-5 py-3 text-gray-800 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">${entry.user_input}</td>
+            <td class="px-5 py-3 text-gray-700 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">${entry.response}</td>
+            <td class="px-5 py-3">${entry.emotions.map(e => `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-1 mb-1">${e}</span>`).join('')}</td>
           `;
           table.appendChild(row);
         });
       } catch (err) {
         console.error('History error:', err);
+        const table = document.getElementById('historyContainer');
+        table.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-gray-500">Failed to load history. Please try again.</td></tr>`;
       }
     }
 
@@ -385,19 +570,19 @@
       messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} message-enter`;
 
       const emotionsBadges = emotions.map(e =>
-        `<span class="px-2 py-1 text-[10px] sm:text-xs rounded-full bg-indigo-100 text-indigo-700">${e}</span>`
+        `<span class="px-2 py-1 text-[10px] sm:text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">${e}</span>`
       ).join(' ');
 
       messageDiv.innerHTML = `
-        <div class="max-w-[85%] sm:max-w-[80%] p-3 sm:p-4 rounded-xl ${isUser ? 'bg-indigo-600 text-white' : 'bg-gray-100'}">
-          <p class="text-sm sm:text-base">${text}</p>
+        <div class="max-w-[85%] sm:max-w-[75%] p-4 rounded-xl shadow-md ${isUser ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-bl-xl rounded-tr-xl' : 'bg-gradient-to-br from-gray-100 to-gray-50 text-gray-800 rounded-b-xl rounded-tr-xl'}">
+          <p class="text-sm sm:text-base leading-relaxed">${text}</p>
           ${!isUser ? `
-          <div class="mt-2 sm:mt-3 flex items-center justify-between flex-wrap gap-2">
-            <div class="flex space-x-1">${emotionsBadges}</div>
-            <div class="flex space-x-1 text-sm">
+          <div class="mt-3 sm:mt-4 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex flex-wrap gap-1">${emotionsBadges}</div>
+            <div class="flex space-x-0.5 text-sm">
               ${[1, 2, 3, 4, 5].map(i => `
-                <button class="rating-btn p-1 hover:text-yellow-400" data-rating="${i}">
-                  <span class="material-icons text-sm">star</span>
+                <button class="rating-btn p-1.5 rounded-full hover:bg-indigo-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-300" data-rating="${i}">
+                  <span class="material-icons text-lg text-gray-400 hover:text-yellow-500 transition-colors">star</span>
                 </button>
               `).join('')}
             </div>
@@ -412,7 +597,14 @@
         const updateStars = (rating) => {
           ratingButtons.forEach(b => {
             const r = parseInt(b.dataset.rating, 10);
-            b.classList.toggle('text-yellow-400', r <= rating);
+            const starIcon = b.querySelector('.material-icons');
+            if (r <= rating) {
+              starIcon.classList.add('text-yellow-500');
+              starIcon.classList.remove('text-gray-400');
+            } else {
+              starIcon.classList.remove('text-yellow-500');
+              starIcon.classList.add('text-gray-400');
+            }
           });
         };
 
@@ -437,8 +629,17 @@
 
               selectedRating = rating;
               updateStars(selectedRating);
+              // Optionally disable buttons or show a thank you message
+              ratingButtons.forEach(b => {
+                b.disabled = true;
+                b.classList.add('opacity-70', 'cursor-not-allowed');
+                b.classList.remove('hover:bg-indigo-100');
+              });
+              console.log(`Feedback submitted: ${rating} stars for message at ${botTimestamp}`);
             } catch (error) {
               console.error('Feedback error:', error);
+              // Provide user feedback on error
+              alert('Failed to submit feedback. Please try again.');
             }
           });
         });
@@ -468,23 +669,28 @@
       addMessage(msg, true);
       messageInput.value = '';
       sendButton.disabled = true;
+      voiceButton.disabled = true; // Disable voice button during send
 
       try {
-        const { data } = await axios.post('/chat', { message: msg });
+        const {
+          data
+        } = await axios.post('/chat', {
+          message: msg
+        });
         const r = data.structured_response;
-        // console.log('Response:', r);
-        // console.log(typeof r)
         const suggestionsHTML = r["Practical Suggestions"]
-          .map(s => `• ${s}<br>`)
-          .join("");
+          .map(s => `<li>${s}</li>`)
+          .join(""); // Changed to list items for better formatting
         const fullMessage = `
-          ${r["Empathetic Acknowledgement"]}<br><br>
+          <strong>${r["Empathetic Acknowledgement"]}</strong><br><br>
 
-          🔧 Suggestions:<br>
-          ${suggestionsHTML}<br>
+          <p class="font-semibold text-indigo-700 flex items-center mb-1"><span class="material-icons text-lg mr-1">lightbulb</span>Suggestions:</p>
+          <ul class="list-disc list-inside ml-4 mb-3 leading-relaxed">${suggestionsHTML}</ul>
 
-          💡 Reflection: ${r["CBT-style Reflection Tip"]}<br>
-          💬 ${r["Encouraging Closing Line"]}<br>
+          <p class="font-semibold text-indigo-700 flex items-center mb-1"><span class="material-icons text-lg mr-1">self_improvement</span>Reflection:</p>
+          <p class="mb-3 leading-relaxed">${r["CBT-style Reflection Tip"]}</p>
+
+          <p class="italic text-gray-600">${r["Encouraging Closing Line"]}</p>
         `.trim();
         addMessage(fullMessage, false, data.sentiment, msg, data.timestamp);
         if (data.audio_response) {
@@ -493,9 +699,10 @@
         }
       } catch (err) {
         console.error('Chat error:', err);
-        addMessage('Sorry, I had trouble responding. Please try again.', false);
+        addMessage('Oops! It seems I lost my train of thought. Could you please try asking again?', false);
       } finally {
         sendButton.disabled = false;
+        voiceButton.disabled = false;
       }
     }
 
@@ -509,10 +716,12 @@
 
         recognition.onstart = () => {
           voiceButton.classList.add('recording-active');
+          messageInput.placeholder = 'Listening...';
         };
 
         recognition.onend = () => {
           voiceButton.classList.remove('recording-active');
+          messageInput.placeholder = 'Type your message or use voice...';
         };
 
         recognition.onresult = (e) => {
@@ -521,15 +730,15 @@
           sendMessage();
         };
 
-        recognition.onerror = (e) => console.error('Voice error:', e.error);
+        recognition.onerror = (e) => {
+          console.error('Voice error:', e.error);
+          messageInput.placeholder = 'Voice input error. Try typing.';
+        };
       } else {
         voiceButton.style.display = 'none';
+        console.warn('Speech Recognition not supported in this browser.');
       }
     }
-
-    voiceButton.addEventListener('click', () => {
-      recognition?.start();
-    });
 
     document.querySelectorAll('a[href^="#"]').forEach(link => {
       link.addEventListener('click', e => {
@@ -541,28 +750,34 @@
 
         document.querySelectorAll('#sidebar a').forEach(a => {
           a.classList.remove('bg-indigo-50', 'text-indigo-700');
-          a.classList.add('hover:bg-gray-100');
+          a.classList.add('hover:bg-gray-100', 'text-gray-700');
         });
         link.classList.add('bg-indigo-50', 'text-indigo-700');
-        link.classList.remove('hover:bg-gray-100');
+        link.classList.remove('hover:bg-gray-100', 'text-gray-700');
+
+
+        if (targetId === 'analytics') {
+          initializeAnalytics(); // Re-initialize charts on view
+        }
+        if (targetId === 'history') {
+          loadHistory(); // Reload history on view
+        }
 
         if (window.innerWidth < 1024) toggleSidebar();
       });
     });
 
     document.addEventListener('DOMContentLoaded', () => {
+      // Set initial active section and sidebar link
+      const initialSection = window.location.hash ? window.location.hash.substring(1) : 'chat';
       document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.remove('active'));
-      document.getElementById('chatSection').classList.add('active');
+      document.getElementById(`${initialSection}Section`).classList.add('active');
 
-      document.querySelectorAll('a[href^="#"]').forEach(link => {
-        link.addEventListener('click', e => {
-          e.preventDefault();
-          const targetId = link.getAttribute('href').substring(1);
-          document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.remove('active'));
-          document.getElementById(`${targetId}Section`).classList.add('active');
-          if (window.innerWidth < 1024) toggleSidebar();
-        });
-      });
+      const initialLink = document.querySelector(`#sidebar a[href="#${initialSection}"]`);
+      if (initialLink) {
+        initialLink.classList.add('bg-indigo-50', 'text-indigo-700');
+        initialLink.classList.remove('hover:bg-gray-100', 'text-gray-700');
+      }
 
       sendButton.addEventListener('click', sendMessage);
       messageInput.addEventListener('keypress', e => {
@@ -574,8 +789,15 @@
       document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
       sidebarBackdrop.addEventListener('click', toggleSidebar);
 
-      initializeAnalytics();
-      loadHistory();
+      // Load data for initial section if it's not chat
+      if (initialSection === 'analytics') {
+        initializeAnalytics();
+      } else if (initialSection === 'history') {
+        loadHistory();
+      } else { // Always initialize analytics and history when page loads, but only render when active
+        initializeAnalytics();
+        loadHistory();
+      }
     });
   </script>
 </body>

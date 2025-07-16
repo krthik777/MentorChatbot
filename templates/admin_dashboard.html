@@ -1,454 +1,333 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="antialiased">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - MentorChatbot</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- jsPDF and html2canvas for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Google Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Use Inter font as the default */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
         }
 
-        .header {
-            background-color: #2c3e50;
-            color: white;
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
         }
 
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 1rem;
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; /* slate-100 */
         }
 
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* slate-300 */
+            border-radius: 10px;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* slate-400 */
         }
-
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-
-        .user-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .user-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .user-item:hover {
-            background-color: #f8f9fa;
-        }
-
+        
+        /* Custom styles for active user and tabs */
         .user-item.active {
-            background-color: #e3f2fd;
+            background-color: #eff6ff; /* blue-50 */
+            color: #2563eb; /* blue-600 */
         }
-
-        .user-info h4 {
-            margin-bottom: 0.25rem;
-        }
-
-        .user-info small {
-            color: #666;
-        }
-
-        .status-badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .status-online {
-            background-color: #4caf50;
-            color: white;
-        }
-
-        .status-offline {
-            background-color: #f44336;
-            color: white;
-        }
-
-        .analytics-section {
-            margin-bottom: 2rem;
-        }
-
-        .message-log {
-            max-height: 350px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .message-item {
-            padding: 1rem;
-            border-bottom: 1px solid #eee;
-        }
-
-        .message-user {
-            background-color: #e3f2fd;
-        }
-
-        .message-bot {
-            background-color: #f1f8e9;
-        }
-
-        .message-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-        }
-
-        .timestamp {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .search-box {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.3s;
-        }
-
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-
-        canvas {
-            width: 100% !important;
-            height: auto !important;
-        }
-
-        .chart-container {
-            height: 300px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f8f9fa;
-            width: 100%;
-        }
-
-        .tabs {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .tab {
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s;
-        }
-
         .tab.active {
-            border-bottom-color: #007bff;
-            color: #007bff;
+            border-color: #2563eb; /* blue-600 */
+            color: #2563eb; /* blue-600 */
         }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @media (min-width: 768px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr 2fr;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 2rem;
-            }
-
-            .tabs {
-                flex-direction: row;
-            }
-
-            .tab {
-                padding: 0.75rem 1.5rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .user-item {
-                flex-direction: column;
-                padding: 0.75rem;
-            }
-
-            .message-log {
-                max-height: 350px;
-            }
-
-            .message-header {
-                display: block;
-            }
-
-            .user-info h4 {
-                font-size: 1.1rem;
-            }
-
-            .search-box {
-                width: 100%;
-                padding: 0.75rem;
-            }
-
-            .tabs {
-                flex-direction: row;
-                margin-bottom: 1rem;
-            }
-
-            .tab {
-                padding: 1rem;
-            }
+        .tab.active .material-icons, .tab.active .material-symbols-outlined {
+             color: #2563eb; /* blue-600 */
         }
     </style>
 </head>
 
-<body>
-    <div class="header flex justify-between items-center">
-        <div>
-            <h1 class="text-2xl font-bold">Admin Dashboard</h1>
-            <p>MentorChatbot Management System</p>
-        </div>
-        <div class="relative group">
-            <button class="flex items-center space-x-2 bg-white/10 px-1 py-1.5 rounded-lg focus:outline-none">
-                <span class="material-icons">account_circle</span>
-                <span class="text-sm sm:inline">Admin</span>
-                <span class="material-icons text-base">expand_more</span>
-            </button>
-            <div
-                class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-100 z-50 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto transition-opacity">
-                <a href="/logout" class="block px-4 py-2 text-gray-700 hover:bg-indigo-50 flex items-center">
-                    <span class="material-icons mr-2 text-base">logout</span>
-                    Logout
-                </a>
-            </div>
-        </div>
-    </div>
+<body class="bg-slate-50 text-slate-700">
 
+    <div class="flex min-h-screen">
+        <!-- ===== Sidebar Start ===== -->
+        <aside id="sidebar" class="w-72 flex-col bg-white border-r border-slate-200 fixed inset-y-0 left-0 z-40 lg:relative lg:translate-x-0 transform -translate-x-full transition-transform duration-300 ease-in-out">
+            <!-- Sidebar Header -->
+            <div class="flex items-center gap-3 h-20 border-b border-slate-200 px-6">
+                 <span class="material-symbols-outlined text-3xl text-blue-600">
+                    smart_toy
+                </span>
+                <div class="flex flex-col">
+                    <h1 class="text-lg font-bold text-slate-800">MentorChatbot</h1>
+                    <p class="text-xs text-slate-500">Management System</p>
+                </div>
+            </div>
 
-    <div class="container">
-        <!-- Statistics Overview -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="totalUsers">N/A</div>
-                <div>Total Users</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalMessages">N/A</div>
-                <div>Total Messages</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="feedbackRate">N/A</div>
-                <div>Feedback Rate</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalAverageRating">N/A</div>
-                <div>Average Rating</div>
-            </div>
-        </div>
-
-        <div class="dashboard-grid">
             <!-- User List -->
-            <div class="card">
-                <h3>User Management</h3>
-                <input type="text" class="search-box" placeholder="Search users...">
-                <div class="user-list" id="userList">
+             <div class="flex flex-col flex-1 p-4">
+                <h3 class="px-4 py-2 font-semibold text-slate-800">User Management</h3>
+                 <div class="relative p-2">
+                    <span class="material-icons absolute left-5 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                    <input type="text" class="search-box w-full bg-slate-100 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search users...">
+                </div>
+                <nav id="userList" class="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
+                    <!-- Jinja template for users -->
                     {% for u in users %}
                     {% if u.username != 'admin' %}
-                    <div class="user-item" onclick="fetchUserAnalytics('{{ u._id }}','{{ u.username }}')">
-                        <div class="user-info">
-                            <h4>{{ u.username }}</h4>
-                            <small>{{ u.email }}</small>
+                    <a href="#" class="user-item group flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-200 hover:bg-blue-50" onclick="fetchUserAnalytics('{{ u._id }}','{{ u.username }}', event)">
+                        <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500 group-[.active]:bg-blue-200 group-[.active]:text-blue-700">
+                            {{ u.username[0]|upper }}
                         </div>
-                    </div>
+                        <div class="flex flex-col">
+                            <h4 class="font-semibold text-sm text-slate-800 group-[.active]:text-blue-700">{{ u.username }}</h4>
+                            <small class="text-xs text-slate-500">{{ u.email }}</small>
+                        </div>
+                    </a>
                     {% endif %}
                     {% endfor %}
-                </div>
+                </nav>
             </div>
+        </aside>
+        <!-- ===== Sidebar End ===== -->
 
-            <!-- Analytics Section -->
-            <div class="card">
-                <h3>User Analytics<span id="selectedUsername"></span></h3>
-                <div class="tabs">
-                    <div class="tab active" onclick="showTab('overview', event)">Overview</div>
-                    <div class="tab" onclick="showTab('messageslogs', event)">Messages</div>
-                    <div class="tab" onclick="showTab('activity', event)">Activity</div>
-                </div>
+        <!-- Overlay for mobile sidebar -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
-                <div id="overview" class="tab-content active">
-                    <div class="chart-container">
-                        <canvas id="sentimentChart"></canvas>
+        <!-- ===== Content Area Start ===== -->
+        <div class="relative flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
+            <!-- ===== Header Start ===== -->
+            <header class="sticky top-0 z-20 flex w-full bg-white/80 backdrop-blur-lg drop-shadow-sm">
+                 <div class="flex flex-grow items-center justify-between px-4 py-4 md:px-6 2xl:px-8">
+                     <div class="flex items-center gap-4">
+                        <button class="lg:hidden text-slate-600" onclick="toggleSidebar()">
+                            <span class="material-icons">menu</span>
+                        </button>
+                         <h2 class="text-xl md:text-2xl font-bold text-slate-800">Dashboard</h2>
+                     </div>
+                     <div class="relative group">
+                        <button class="flex items-center gap-2">
+                            <img class="h-9 w-9 rounded-full object-cover" src="https://ui-avatars.com/api/?name=Admin&background=0284c7&color=fff" alt="Admin"/>
+                            <div class="hidden sm:flex flex-col items-start">
+                                <span class="font-semibold text-sm text-slate-700">Admin</span>
+                                <span class="text-xs text-slate-500">System Administrator</span>
+                            </div>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-100 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
+                            <a href="/logout" class="flex items-center gap-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-100 hover:text-blue-600">
+                                <span class="material-icons text-lg">logout</span>
+                                Logout
+                            </a>
+                        </div>
                     </div>
-                    <div style="margin-top: 1rem;">
-                        <p><strong>Total Sessions:</strong> <span id="totalSessions">Loading...</span></p>
-                        <p><strong>Total Sessions Rated:</strong> <span id="totalSessionsRated">Loading...</span></p>
-                        <p><strong>Average Rating:</strong> <span id="averageRating">Loading...</span></p>
-                        <ul id="sentimentDistribution"></ul>
+                </div>
+            </header>
+            <!-- ===== Header End ===== -->
+
+            <!-- Main Content -->
+            <main class="p-4 md:p-6 2xl:p-10">
+                <!-- Statistics Overview -->
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 md:gap-6">
+                    <div class="flex items-center p-5 bg-white rounded-xl shadow-sm">
+                        <div class="p-4 bg-sky-100 rounded-full">
+                           <span class="material-symbols-outlined text-sky-600">group</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-slate-500">Total Users</p>
+                            <p id="totalUsers" class="text-2xl font-bold text-slate-800">N/A</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-5 bg-white rounded-xl shadow-sm">
+                        <div class="p-4 bg-orange-100 rounded-full">
+                             <span class="material-symbols-outlined text-orange-600">forum</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-slate-500">Total Messages</p>
+                            <p id="totalMessages" class="text-2xl font-bold text-slate-800">N/A</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-5 bg-white rounded-xl shadow-sm">
+                         <div class="p-4 bg-teal-100 rounded-full">
+                           <span class="material-symbols-outlined text-teal-600">rate_review</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-slate-500">Feedback Rate</p>
+                            <p id="feedbackRate" class="text-2xl font-bold text-slate-800">N/A</p>
+                        </div>
+                    </div>
+                     <div class="flex items-center p-5 bg-white rounded-xl shadow-sm">
+                        <div class="p-4 bg-violet-100 rounded-full">
+                            <span class="material-symbols-outlined text-violet-600">star_half</span>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm text-slate-500">Average Rating</p>
+                            <p id="totalAverageRating" class="text-2xl font-bold text-slate-800">N/A</p>
+                        </div>
                     </div>
                 </div>
 
-                <div id="messageslogs" class="tab-content message-log">
+                <!-- Analytics Section -->
+                <div id="analytics-container" class="mt-6 bg-white rounded-xl shadow-sm p-4 md:p-6">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <h3 class="text-xl font-bold text-slate-800">User Analytics<span id="selectedUsername" class="text-blue-600"></span></h3>
+                        <button id="downloadPdfBtn" onclick="downloadAnalyticsAsPDF()" class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed">
+                            <span class="material-icons text-base">download</span>
+                            <span id="pdf-btn-text">Download PDF</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Tabs -->
+                    <div class="mt-4 border-b border-slate-200">
+                        <nav class="flex -mb-px space-x-1 sm:space-x-4" aria-label="Tabs">
+                             <button class="tab active group inline-flex items-center justify-center py-3 px-1 sm:px-4 border-b-2 border-transparent font-medium text-sm transition-all" onclick="showTab('overview', event)">
+                                <span class="material-icons mr-2 text-slate-500">pie_chart</span>
+                                <span class="text-slate-600">Overview</span>
+                            </button>
+                            <button class="tab group inline-flex items-center justify-center py-3 px-1 sm:px-4 border-b-2 border-transparent font-medium text-sm transition-all" onclick="showTab('messageslogs', event)">
+                                <span class="material-icons mr-2 text-slate-500">chat</span>
+                                <span class="text-slate-600">Messages</span>
+                            </button>
+                            <button class="tab group inline-flex items-center justify-center py-3 px-1 sm:px-4 border-b-2 border-transparent font-medium text-sm transition-all" onclick="showTab('activity', event)">
+                                 <span class="material-icons mr-2 text-slate-500">bar_chart</span>
+                                 <span class="text-slate-600">Activity</span>
+                            </button>
+                        </nav>
+                    </div>
+
+                    <div class="pt-6">
+                        <!-- Overview Tab -->
+                        <div id="overview" class="tab-content active">
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                               <div class="lg:col-span-1 h-72">
+                                    <canvas id="sentimentChart"></canvas>
+                                </div>
+                                <div class="lg:col-span-2 flex flex-col justify-center space-y-4">
+                                    <div class="p-4 bg-slate-50 rounded-lg">
+                                        <p class="font-medium text-slate-800">Total Sessions</p>
+                                        <p class="text-3xl font-bold text-blue-600" id="totalSessions">Loading...</p>
+                                    </div>
+                                     <div class="p-4 bg-slate-50 rounded-lg">
+                                        <p class="font-medium text-slate-800">Sessions Rated</p>
+                                        <p class="text-3xl font-bold text-teal-600" id="totalSessionsRated">Loading...</p>
+                                    </div>
+                                    <div class="p-4 bg-slate-50 rounded-lg">
+                                        <p class="font-medium text-slate-800">Average Rating</p>
+                                        <p class="text-3xl font-bold text-amber-500" id="averageRating">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Messages Tab -->
+                        <div id="messageslogs" class="tab-content hidden max-h-[600px] overflow-y-auto p-1 space-y-6">
+                            <!-- Messages will be rendered here by JS -->
+                        </div>
+
+                        <!-- Activity Tab -->
+                         <div id="activity" class="tab-content hidden h-96">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="activity" class="tab-content">
-                    <canvas id="activityChart"></canvas>
-                </div>
-            </div>
+            </main>
         </div>
-
-        <div class="card" id="analyticsDetails" style="display:none;">
-            <h3 id="analyticsTitle"></h3>
-
-            <div>
-                <h4>Chat Logs</h4>
-                <div class="message-log" id="analyticsLogs"></div>
-            </div>
-
-            <div>
-
-
-                <h4>Feedback Entries</h4>
-                <ul id="analyticsFeedback"></ul>
-            </div>
-        </div>
-
+        <!-- ===== Content Area End ===== -->
     </div>
 
     <script>
+        // State variables
         let activityChart = null;
         let sentimentChart = null;
         let logsData = null;
+        let activityChartData = null;
+        let sentimentChartData = null;
+        let selectedUsernameForPdf = '';
 
-        document.addEventListener('DOMContentLoaded', function () {
+        // DOM Elements
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        const pdfBtnText = document.getElementById('pdf-btn-text');
+        
+        // Initial setup on DOM content loaded
+        document.addEventListener('DOMContentLoaded', function() {
             const firstUserItem = document.querySelector('.user-item');
             if (firstUserItem) {
                 firstUserItem.click();
+            } else {
+                downloadPdfBtn.disabled = true;
             }
 
+            fetchGlobalAnalytics();
+            setupSearchListener();
+        });
+        
+        // --- UI Interaction Functions ---
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        }
+
+        function setupSearchListener() {
+            document.querySelector('.search-box').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                document.querySelectorAll('.user-item').forEach(item => {
+                    const userName = item.querySelector('h4').textContent.toLowerCase();
+                    const userEmail = item.querySelector('small').textContent.toLowerCase();
+                    item.style.display = (userName.includes(searchTerm) || userEmail.includes(searchTerm)) ? 'flex' : 'none';
+                });
+            });
+        }
+        
+        function showTab(tabName, event) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+            document.getElementById(tabName).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+        }
+
+        // --- Data Fetching Functions ---
+
+        function fetchGlobalAnalytics() {
             fetch('/admin/getAnalytics')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('totalUsers').innerText = data.totalUsers || 'N/A';
-                    document.getElementById('totalMessages').innerText = data.totalMessages || 'N/A';
-                    document.getElementById('feedbackRate').innerText = data.feedbackRate || 'N/A';
+                    document.getElementById('totalUsers').innerText = data.totalUsers || '0';
+                    document.getElementById('totalMessages').innerText = data.totalMessages || '0';
+                    document.getElementById('feedbackRate').innerText = data.feedbackRate || '0%';
                     document.getElementById('totalAverageRating').innerText = data.totalAverageRating || 'N/A';
                 })
-                .catch(error => {
-                    console.error('Error fetching analytics data:', error);
-                    document.getElementById('totalUsers').innerText = 'N/A';
-                    document.getElementById('totalMessages').innerText = 'N/A';
-                    document.getElementById('feedbackRate').innerText = 'N/A';
-                    document.getElementById('totalAverageRating').innerText = 'N/A';
-                });
-        });
-
-        function selectUser(userId) {
-            document.querySelectorAll('.user-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            event.target.closest('.user-item').classList.add('active');
-
-            loadUserData(userId);
+                .catch(error => console.error('Error fetching global analytics:', error));
         }
 
-        function loadUserData(userId) {
-            console.log('Loading data for user:', userId);
-        }
+        function fetchUserAnalytics(userId, username, event) {
+            event.preventDefault();
+            selectedUsernameForPdf = username;
 
-        document.querySelector('.search-box').addEventListener('input', function (e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const userItems = document.querySelectorAll('.user-item');
-
-            userItems.forEach(item => {
-                const userName = item.querySelector('h4').textContent.toLowerCase();
-                const userEmail = item.querySelector('small').textContent.toLowerCase();
-
-                if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        });
-
-
-        function fetchUserAnalytics(userId, username) {
             document.querySelectorAll('.user-item').forEach(item => item.classList.remove('active'));
             event.currentTarget.classList.add('active');
-
             document.getElementById('selectedUsername').innerText = `: ${username}`;
+            
+            ['totalSessions', 'totalSessionsRated', 'averageRating'].forEach(id => document.getElementById(id).innerText = '...');
+            downloadPdfBtn.disabled = false;
 
             fetch(`/admin/user/${userId}/analytics`)
                 .then(res => res.json())
@@ -462,168 +341,182 @@
                     };
                     logsData = data.logs;
 
-                    showTab('overview');
+                    // Render all content now that data is available
+                    renderSentimentChart(sentimentChartData);
+                    renderActivityChart(activityChartData);
+                    renderChatLogs(logsData);
+
+                    // Set the initial tab view to 'overview'
+                    showTab('overview', { currentTarget: document.querySelector('.tab') });
 
                     document.getElementById('totalSessions').innerText = sentimentChartData.totalSessions;
                     document.getElementById('totalSessionsRated').innerText = sentimentChartData.totalSessionsRated;
                     document.getElementById('averageRating').innerText = sentimentChartData.avgRating;
-                    renderSentimentChart(sentimentChartData);
+                })
+                .catch(error => {
+                     console.error('Error fetching user analytics:', error);
+                     downloadPdfBtn.disabled = true;
                 });
+            
+            if (window.innerWidth < 1024) {
+                toggleSidebar();
+            }
+        }
+
+        // --- Chart Rendering Functions ---
+
+        function renderChart(canvasId, type, data, options) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            let chartInstance = Chart.getChart(canvasId);
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            if (!data || (data.datasets && data.datasets.every(ds => ds.data.length === 0))) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.font = "16px 'Inter'";
+                ctx.fillStyle = '#64748b';
+                ctx.textAlign = 'center';
+                ctx.fillText(`No ${canvasId.includes('sentiment') ? 'sentiment' : 'activity'} data available.`, ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return null;
+            }
+            return new Chart(ctx, { type, data, options });
         }
 
         function renderSentimentChart(data) {
-            const emotions = data.emotions;
-            const labels = [...new Set(emotions.map(d => d._id))];
-            const colorPalette = [
-                '#6366f1', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa',
-                '#f472b6', '#facc15', '#38bdf8', '#4ade80', '#fb7185', '#f59e42',
-                '#10b981', '#818cf8', '#e879f9', '#fde68a', '#6ee7b7', '#fca5a5',
-                '#c084fc', '#a3e635'
-            ];
-
-            const dataCounts = labels.map(label =>
-                emotions.find(e => e._id === label)?.count || 0
-            );
-
-            if (sentimentChart) sentimentChart.destroy();
-            sentimentChart = new Chart(document.getElementById('sentimentChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: dataCounts,
-                        backgroundColor: labels.map((_, i) => colorPalette[i % colorPalette.length])
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'right'
-                        }
-                    }
-                }
-            });
+            const chartData = {
+                labels: data?.emotions?.map(d => d._id) || [],
+                datasets: [{
+                    data: data?.emotions?.map(d => d.count) || [],
+                    backgroundColor: ['#3b82f6', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
+                    borderColor: '#ffffff',
+                    borderWidth: 2,
+                }]
+            };
+            const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }, cutout: '70%' };
+            sentimentChart = renderChart('sentimentChart', 'doughnut', chartData, options);
         }
 
         function renderActivityChart(data) {
-            if (!data) return;
-
             const weekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            const dayCounts = {
-                'Sun': 0, 'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0
+            const dayCounts = weekLabels.reduce((acc, day) => ({...acc, [day]: 0}), {});
+            data?.forEach(entry => {
+                const day = new Date(entry._id).toLocaleDateString('en-US', { weekday: 'short' });
+                if(dayCounts.hasOwnProperty(day)) dayCounts[day] += entry.count;
+            });
+            
+            const chartData = {
+                labels: weekLabels,
+                datasets: [{
+                    label: 'Messages per Day',
+                    data: weekLabels.map(day => dayCounts[day]),
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1,
+                    borderRadius: 6,
+                }]
             };
-
-            data.forEach(entry => {
-                const date = new Date(entry._id);
-                const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
-                dayCounts[weekday] += entry.count;
-            });
-
-            const weekData = weekLabels.map(day => dayCounts[day] || 0);
-
-            if (activityChart) activityChart.destroy();
-            activityChart = new Chart(document.getElementById('activityChart'), {
-                type: 'bar',
-                data: {
-                    labels: weekLabels,
-                    datasets: [{
-                        label: 'Messages per Day',
-                        data: weekData,
-                        backgroundColor: '#4caf50'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Messages' }
-                        },
-                        x: {
-                            title: { display: true, text: 'Day of Week' }
-                        }
-                    }
-                }
-            });
+            const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' } }, x: { grid: { display: false } } } };
+            activityChart = renderChart('activityChart', 'bar', chartData, options);
         }
 
         function renderChatLogs(data) {
             const logsContainer = document.getElementById('messageslogs');
-            logsContainer.innerHTML = '';
-
-            if (data && data.length > 0) {
-                data.forEach(log => {
-                    const messageItem = document.createElement('div');
-                    messageItem.classList.add('message-item');
-
-                    const messageUser = document.createElement('div');
-                    messageUser.classList.add('message-user');
-
-                    const messageHeader = document.createElement('div');
-                    messageHeader.classList.add('message-header');
-                    messageHeader.innerHTML = `
-                    <span>${log.user_input}</span>
-                    <span class="timestamp">${log.timestamp}</span>`;
-
-                    const messageBot = document.createElement('div');
-                    messageBot.classList.add('message-bot');
-                    messageBot.innerHTML = `<p>${log.bot_response}</p>`;
-
-                    messageUser.appendChild(messageHeader);
-                    messageUser.appendChild(messageBot);
-
-                    if (log.rating !== undefined && log.rating !== null) {
-                        const ratingStars = document.createElement('div');
-                        ratingStars.className = 'flex space-x-1 mt-2';
-                        for (let i = 1; i <= log.rating; i++) {
-                            const star = document.createElement('span');
-                            star.className = 'material-icons';
-                            star.style.color = '#facc15';
-                            star.textContent = 'star';
-                            ratingStars.appendChild(star);
-                        }
-                        messageBot.appendChild(ratingStars);
-                    }
-
-                    messageItem.appendChild(messageUser);
-                    logsContainer.appendChild(messageItem);
-                });
-            }
+            logsContainer.innerHTML = (!data || data.length === 0) ? `<div class="text-center text-slate-500 py-10">No messages to display.</div>` : data.map(log => `
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-start gap-3 justify-end">
+                        <div class="bg-slate-100 rounded-xl rounded-br-none p-4 max-w-lg"><p class="text-sm text-slate-700">${log.user_input}</p></div>
+                        <div class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500 text-sm flex-shrink-0">U</div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-xl">smart_toy</span></div>
+                        <div class="bg-blue-50 text-slate-800 rounded-xl rounded-bl-none p-4 max-w-lg">
+                            <p class="text-sm">${log.bot_response}</p>
+                            ${log.rating !== undefined && log.rating !== null ? `<div class="flex items-center gap-2 mt-3 border-t border-blue-200 pt-2"><div class="flex">${[...Array(5)].map((_, i) => `<span class="material-icons text-base ${i < log.rating ? 'text-amber-400' : 'text-slate-300'}">star</span>`).join('')}</div><span class="text-xs font-medium text-slate-500">(${log.rating}/5)</span></div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
+        // --- PDF Generation ---
 
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
+        async function downloadAnalyticsAsPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            downloadPdfBtn.disabled = true;
+            pdfBtnText.textContent = 'Generating...';
 
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const activeTab = document.querySelector('.tab-content:not(.hidden)');
+            
+            // Temporarily show all chart containers for capturing
+            tabContents.forEach(tc => tc.classList.remove('hidden'));
 
-                const tabText = tab.textContent.trim().toLowerCase();
+            try {
+                // Add a small delay to ensure the browser has re-rendered the layout
+                await new Promise(resolve => setTimeout(resolve, 100));
 
-                if (
-                    (tabName === 'overview' && tabText === 'overview') ||
-                    (tabName === 'messageslogs' && tabText === 'messages') ||
-                    (tabName === 'activity' && tabText === 'activity')
-                ) {
-                    tab.classList.add('active');
-                }
-            });
+                // 1. Add Header
+                doc.setFontSize(22);
+                doc.setFont('helvetica', 'bold');
+                doc.text('User Analytics Report', 105, 20, { align: 'center' });
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`User: ${selectedUsernameForPdf}`, 105, 30, { align: 'center' });
+                doc.setLineWidth(0.5);
+                doc.line(20, 35, 190, 35);
 
-            document.getElementById(tabName).classList.add('active');
+                // 2. Add Key Statistics
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Key Metrics', 20, 50);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Total Sessions: ${document.getElementById('totalSessions').textContent}`, 20, 60);
+                doc.text(`Sessions Rated: ${document.getElementById('totalSessionsRated').textContent}`, 20, 70);
+                doc.text(`Average Rating: ${document.getElementById('averageRating').textContent}`, 20, 80);
 
-            if (tabName === 'overview') {
-                renderSentimentChart(sentimentChartData);
-            } else if (tabName === 'messageslogs') {
-                renderChatLogs(logsData);
-            } else if (tabName === 'activity') {
-                renderActivityChart(activityChartData);
+                // 3. Capture and Add Charts
+                const sentimentCanvas = await html2canvas(document.getElementById('sentimentChart'), { backgroundColor: '#ffffff' });
+                const activityCanvas = await html2canvas(document.getElementById('activityChart'), { backgroundColor: '#ffffff' });
+                
+                doc.addPage();
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Sentiment Distribution', 105, 20, { align: 'center' });
+                doc.addImage(sentimentCanvas.toDataURL('image/png'), 'PNG', 40, 30, 130, 130);
+
+                doc.addPage();
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Weekly Activity', 105, 20, { align: 'center' });
+                doc.addImage(activityCanvas.toDataURL('image/png'), 'PNG', 20, 30, 170, 85);
+
+                // 4. Save the PDF
+                doc.save(`analytics-${selectedUsernameForPdf}.pdf`);
+
+            } catch (error) {
+                console.error("Error generating PDF:", error);
+                pdfBtnText.textContent = 'Error!';
+                downloadPdfBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                downloadPdfBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                setTimeout(() => {
+                    pdfBtnText.textContent = 'Download PDF';
+                    downloadPdfBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                    downloadPdfBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                }, 3000);
+            } finally {
+                // Restore original tab visibility
+                tabContents.forEach(tc => {
+                    if (tc !== activeTab) {
+                        tc.classList.add('hidden');
+                    }
+                });
+                // Reset button state
+                downloadPdfBtn.disabled = false;
+                pdfBtnText.textContent = 'Download PDF';
             }
         }
 
@@ -631,4 +524,3 @@
 </body>
 
 </html>
-</div>
