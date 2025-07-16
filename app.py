@@ -223,7 +223,7 @@ class MentorAI:
 
                 Respond in the following strict JSON format only:
                 {{
-                    "Empathetic Acknowledgement": "Your empathetic acknowledgement here",
+                    "Empathetic Acknowledgement": "Your empathetic acknowledgement here, only if name is asked tell your name is Ava and you are here to help.",
                     "Practical Suggestions": [
                         "Suggestion 1",
                         "Suggestion 2",
